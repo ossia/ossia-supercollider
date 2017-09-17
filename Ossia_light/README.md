@@ -1,6 +1,7 @@
-#'LOSSIA': light ossia version, without primitives 
+# 'LOSSIA': light ossia version, without primitives 
 
-this light version is based on the old mgulibSC, only supporting Minuit protocol.
+(not usable at the moment)
+
+this light version is based on the old mgulibSC (https://github.com/pchdev/mgulibSC), only supporting standard OSC & Minuit protocol.
+
 Just include the folder in SuperCollider's path, no custom build needed for this one.
-
-
