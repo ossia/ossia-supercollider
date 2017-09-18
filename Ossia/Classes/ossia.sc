@@ -413,7 +413,7 @@ OSSIA_Parameter : OSSIA_Node {
 	value_ { |value|
 		if(m_has_callback)
 		{
-			m_callback.value(this.value());
+			m_callback.value(value);
 		};
 
 		this.pyrSetValue(value);
@@ -543,13 +543,23 @@ OSSIA_Parameter : OSSIA_Node {
 
 	// CONVENIENCE DEF MTHODS (change to kr, ar etc.) --> this will be in mgu
 
-	/*
-	sym { ^m_name.asString.replace("-","_").replace("/","_").drop(1).asSymbol}
-	aar { ^[this.sym, this.getValue()]; }
-	kr { ^this.sym.kr}
+	sym { ^(this.name ++ "_" ++ m_node_id).asSymbol }
+	aar { ^[this.sym, this.value()]; }
+
+
+	kr { | bind = true |
+
+		if(bind) {
+			if(not(m_has_callback)) { this.prEnableCallback; m_has_callback = true };
+			m_callback = { |v| Server.default.sendMsg("/n_set", 0, this.sym, v) };
+		}
+
+		^this.sym.kr
+	}
+
 	ar { ^this.sym.ar}
 	tr { ^this.sym.tr}
-	*/
+
 }
 
 OSSIA_MirrorParameter : OSSIA_Parameter {
