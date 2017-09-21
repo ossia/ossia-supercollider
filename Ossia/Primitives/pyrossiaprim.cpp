@@ -316,9 +316,9 @@ std::string ossia::sc::format_listed_attribute
     else    return (r_iter->second);
 }
 
-template<class T>
+template<class T, class F>
 void ossia::sc::write_array(vmglobals *g, pyrslot *target,
-const std::vector<T>& values, void (*writer_func)(vmglobals*, pyrslot*, const T&)) noexcept
+const T& values, void (*writer_func)(vmglobals*, pyrslot*, const F&)) noexcept
 {
     int sz = values.size();
     auto array = newPyrArray(g->gc, sz, 0, true);
@@ -352,10 +352,10 @@ void ossia::sc::write_value(vmglobals *g, pyrslot *target, const ossia::value& v
     case ossia::val_type::FLOAT:    SetFloat(target, value.get<float>()); break;
     case ossia::val_type::INT:      SetInt(target, value.get<int>()); break;
     case ossia::val_type::STRING:   sc::write_string(g, target, value.get<std::string>()); break;
-    case ossia::val_type::LIST:     sc::write_array<ossia::value>(g, target, value.get<std::vector<ossia::value>>(), sc::write_value); break;
-    case ossia::val_type::VEC2F:    sc::write_array<ossia::value>(g, target, value.get<std::vector<ossia::value>>(), sc::write_value); break;
-    case ossia::val_type::VEC3F:    sc::write_array<ossia::value>(g, target, value.get<std::vector<ossia::value>>(), sc::write_value); break;
-    case ossia::val_type::VEC4F:    sc::write_array<ossia::value>(g, target, value.get<std::vector<ossia::value>>(), sc::write_value); break;
+    case ossia::val_type::LIST:     sc::write_array<std::vector<ossia::value>,ossia::value>(g, target, value.get<std::vector<ossia::value>>(), sc::write_value); break;
+    case ossia::val_type::VEC2F:    sc::write_array<vec2f,ossia::value>(g, target, value.get<vec2f>(), sc::write_value); break;
+    case ossia::val_type::VEC3F:    sc::write_array<vec3f,ossia::value>(g, target, value.get<vec3f>(), sc::write_value); break;
+    case ossia::val_type::VEC4F:    sc::write_array<vec4f,ossia::value>(g, target, value.get<vec4f>(), sc::write_value); break;
     }
 }
 
@@ -385,8 +385,8 @@ int pyr_instantiate_device(vmglobals *g, int n)
     }
 
     auto mpx_proto_ptr  = std::make_unique<multiplex_protocol>();
-
     auto device = std::make_unique<net::generic_device>(std::move(mpx_proto_ptr), device_name);
+
     g_devices.push_back(std::move(device));
 
     int         index = g_devices.size() -1;
@@ -707,7 +707,7 @@ int pyr_node_get_children_names(vmglobals *g, int n)
 {
     auto node = sc::get_node(g->sp);
     std::vector<std::string> children_names = node->children_names();
-    sc::write_array<std::string>(g, g->sp, children_names, sc::write_string);
+    sc::write_array<std::vector<std::string>,std::string>(g, g->sp, children_names, sc::write_string);
 
     return errNone;
 }
@@ -722,7 +722,7 @@ int pyr_node_get_description(vmglobals *g, int n)
 int pyr_node_get_tags(vmglobals *g, int n)
 {
     auto tags = ossia::net::get_tags(*sc::get_node(g->sp));
-    sc::write_array<std::string>(g, g->sp, *tags, sc::write_string);
+    sc::write_array<std::vector<std::string>,std::string>(g, g->sp, *tags, sc::write_string);
     return errNone;
 }
 
@@ -764,7 +764,7 @@ int pyr_parameter_get_domain(vmglobals *g, int n)
     if(!values.empty()) sc_domain.push_back(values);
     else sc_domain.push_back(ossia::value{});
 
-    sc::write_array<ossia::value>(g, g->sp, sc_domain, sc::write_value);
+    sc::write_array<std::vector<ossia::value>,ossia::value>(g, g->sp, sc_domain, sc::write_value);
 
     return errNone;
 }
@@ -996,7 +996,6 @@ int pyr_ossia_dtor(vmglobals *g, int n)
 
     for(auto& device : g_devices)
     {
-        device.get()->get_root_node().clear_children();
         device.reset();
     }
 
@@ -1014,7 +1013,6 @@ int pyr_free_device(vmglobals *g, int n)
     {
         if(&target.get()->get_root_node() == node)
         {
-            target.get()->get_root_node().clear_children();
             target.reset();
         }
     }

@@ -79,10 +79,11 @@ std::string             format_listed_attribute
                         boost::bimaps::multiset_of<T>> target_map) noexcept;
 /**                     converts ossia type or enum attribute (access & bounding modes) to std::string
  */
-template<class T>
+template
+<class T, class F>
 void                    write_array
-                        (vmglobals *g, pyrslot *target, const std::vector<T>& values,
-                        void (*writer_func)(vmglobals*, pyrslot*, const T&)) noexcept;
+                        (vmglobals *g, pyrslot *target, const T& values,
+                        void (*writer_func)(vmglobals*, pyrslot*, const F&)) noexcept;
 /**                     writes array from std::vector to target slot
 */
 void                    write_string(vmglobals *g, pyrslot *target, const std::string& string) noexcept;
