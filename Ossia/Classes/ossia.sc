@@ -136,7 +136,7 @@ OSSIA_bounding_mode {
 
 OSSIA_Node {
 
-	var <m_node_id;
+	var m_ptr_data;
 
 	*new { |parent, name|
 		^super.new.nodeCtor(parent, name);
@@ -245,19 +245,20 @@ OSSIA_Node {
 
 OSSIA_Device : OSSIA_Node {
 
-	classvar count;
+	classvar g_devices;
 	var m_semaphore;
 
-	*new {|name|
-
-		count !? { count = count + 1 };
-		count ?? {
-			count = 1;
-			ShutDown.add({OSSIA_Device.pyrShutdown()});
-		};
-
-		^super.newFromChild.pyrDeviceCtor(name);
+	*initClass {
+		g_devices = [];
+		ShutDown.add({this.ossia_dtor});
 	}
+
+	*new {|name|
+		^super.newFromChild.pyrDeviceCtor(name).stack_up();
+	}
+
+	stack_up { g_devices = g_devices.add(this); }
+	*ossia_dtor { "OSSIA: cleanup...".postln; g_devices.do(_.free()); }
 
 	//-------------------------------------------//
 	//               DEVICE CALLBACKS            //
@@ -362,14 +363,14 @@ OSSIA_Device : OSSIA_Node {
 		^this.primitiveFailed
 	}
 
-	free {
+	pyrFree {
 		_OSSIA_FreeDevice
-		^this.primitiveFailed;
+		^this.primitiveFailed
 	}
 
-	*pyrShutdown {
-		_OSSIA_Dtor
-		^this.primitiveFailed
+	free {
+		g_devices.remove(this);
+		this.pyrFree();
 	}
 
 }
@@ -543,7 +544,7 @@ OSSIA_Parameter : OSSIA_Node {
 
 	// CONVENIENCE DEF MTHODS (change to kr, ar etc.) --> this will be in mgu
 
-	sym { ^(this.name ++ "_" ++ m_node_id).asSymbol }
+	sym { ^(this.name ++ "_" ++ m_ptr_data.asSymbol).asSymbol }
 	aar { ^[this.sym, this.value()]; }
 
 

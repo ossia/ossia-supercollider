@@ -66,10 +66,6 @@ template<class T> int   check_argument_reference
 void                    register_sc_node(pyrslot *s, net::node_base *node) noexcept;
 /**                     saves the node on the stack
  */
-int                     get_node_id(pyrslot *s) noexcept;
-/**                     gets and returns slot's node_id
- *                      (always first array slot in OSSIA_Node based classes)
- */
 net::node_base*         get_node(pyrslot *s);
 /**                     returns slot's matching ossia::node
  */

@@ -14,6 +14,7 @@
 #include <ossia-sc/pyrossiaprim.h>
 #include <ossia/preset/preset.hpp>
 #include <ossia/preset/exception.hpp>
+#include <spdlog/spdlog.h>
 
 extern bool compiledOK;
 
@@ -30,9 +31,6 @@ ex_arg_type     ARG_WRONG_TYPE;
 bmap_t g_typemap;
 bmap_a g_accessmap;
 bmap_b g_bmodemap;
-
-std::vector<std::unique_ptr<net::generic_device>> g_devices;
-std::vector<net::node_base*>  g_nodes;
 
 #define SCCBACK_NAME "pvOnCallback"
 #define HDR "OSSIA: "
@@ -103,38 +101,19 @@ int ossia::sc::check_argument_reference
 
 void ossia::sc::register_sc_node(pyrslot *s, net::node_base *node) noexcept
 {
-    g_nodes.push_back(node);
-    int index = g_nodes.size() -1;
-
-    pyrslot *id_var = slotRawObject(s)->slots;
-    SetInt (id_var, index);
+    pyrslot *ptr_var = slotRawObject(s)->slots;
+    SetPtr  (ptr_var, node);
 }
 
 
 ossia::net::node_base* ossia::sc::get_node(pyrslot *s)
 {
-    bool is_device  = false;
-
     try { check_argument_type(s, { "OSSIA_Parameter", "OSSIA_Node",
-                                   "OSSIA_MirrorParameter", "OSSIA_MirrorNode" }); }
-    catch( const std::exception &e )
-    {
-        try { is_device = check_argument_type(s, { "OSSIA_Device" }); }
-        catch( const std::exception &e ) { throw; }
-    }
+                                   "OSSIA_MirrorParameter", "OSSIA_MirrorNode",
+                                   "OSSIA_Device" }); }
 
-    int node_id     = get_node_id(s);
-
-    if  (is_device) return dynamic_cast<net::node_base*>(g_devices[node_id].get());
-    else            return g_nodes[node_id];
-}
-
-int ossia::sc::get_node_id(pyrslot *s) noexcept
-{
-    pyrslot     *id_var = slotRawObject(s)->slots;
-    int         node_id;
-    slotIntVal  (id_var, &node_id);
-    return      node_id;
+    catch( const std::exception &e ) { throw; }
+    return (net::node_base*) slotRawPtr(&slotRawObject(s)->slots[0]);
 }
 
 template<class T>
@@ -182,7 +161,7 @@ char ossia::sc::read_char(pyrslot *s)
 
     if      ( read_classname(s) == "Symbol" )
             return *slotSymString(s);
-    else    return s->u.c; // didn't find method to properly return char val...
+    else    return s->u.c;
 }
 
 float ossia::sc::read_float(pyrslot *s)
@@ -227,7 +206,6 @@ ossia::domain ossia::sc::read_domain(pyrslot *s, ossia::val_type t)
     try { check_argument_type(s, { "Array", "List", "OSSIA_domain"}); }
     catch(const std::exception& e) { throw; }
 
-    int             sz;
     pyrslot*        target;
     auto            classname   = read_classname(s);
     ossia::domain   domain;
@@ -235,12 +213,10 @@ ossia::domain ossia::sc::read_domain(pyrslot *s, ossia::val_type t)
     if  (classname == "List" || classname ==  "Array")
     {
         target      = s;
-        sz          = slotRawObject(target)->size;
     }
     else if (classname == "OSSIA_domain")
     {
         target      = slotRawObject(s)->slots;
-        sz          = slotRawObject(target)->size;
     }
 
     auto pre_domain = sc::read_vector<ossia::value>(s, sc::read_value);
@@ -288,7 +264,7 @@ ossia::value ossia::sc::read_value(pyrslot *s)
     auto vtype = sc::read_type(s);
     switch( vtype )
     {
-    case val_type::INT:  return ossia::value(read_float(s)); break;
+    case val_type::INT:  return ossia::value(read_float(s)); break; // allows int to float conversion in sc...
     case val_type::BOOL: return ossia::value(IsTrue(s)); break;
     case val_type::CHAR: return ossia::value(read_char(s)); break;
     case val_type::FLOAT: return ossia::value(read_float(s)); break;
@@ -361,39 +337,20 @@ void ossia::sc::write_value(vmglobals *g, pyrslot *target, const ossia::value& v
 
 int pyr_instantiate_device(vmglobals *g, int n)
 {
-    pyrslot *rcvr = g->sp-1,
-            *pr_device_name = g->sp;
-
-    try      { ossia::sc::check_argument_type(pr_device_name, { "String", "Symbol" }); }
+    try      { ossia::sc::check_argument_type(g->sp, { "String", "Symbol" }); }
     catch    ( const std::exception &e )
     {
         ERROTP      (e, ERR_HDR, "Device name argument.");
         return      errFailed;
     }
 
-    auto device_name    = sc::read_string(pr_device_name);
-    for(const auto& device : g_devices)
-    {
-        if(device)
-        {
-            if (device->get_name() == device_name)
-            {
-                post    ("OSSIA: Error! Existing device, aborting...\n");
-                return  errFailed;
-            }
-        }
-    }
+    auto device_name        = sc::read_string(g->sp);
+    auto mpx_proto_ptr      = std::make_unique<multiplex_protocol>();
+    auto device             = new net::generic_device(std::move(mpx_proto_ptr), device_name);
 
-    auto mpx_proto_ptr  = std::make_unique<multiplex_protocol>();
-    auto device = std::make_unique<net::generic_device>(std::move(mpx_proto_ptr), device_name);
+    sc::register_sc_node    (g->sp-1, dynamic_cast<net::node_base*>(device));
 
-    g_devices.push_back(std::move(device));
-
-    int         index = g_devices.size() -1;
-    pyrslot*    id_var = slotRawObject(rcvr)->slots;
-    SetInt      (id_var, index);
-
-    return errNone;
+    return      errNone;
 }
 
 int pyr_expose_oscquery_server(vmglobals *g, int n)
@@ -401,11 +358,6 @@ int pyr_expose_oscquery_server(vmglobals *g, int n)
     pyrslot  *rcvr           = g->sp-2,
              *pr_osc_port    = g->sp-1,
              *pr_ws_port     = g->sp;
-
-    int      device_id;
-
-    try      { device_id = ossia::sc::get_node_id(rcvr); }
-    catch    ( const std::exception &e ) { return errReturn; }
 
     try      { ossia::sc::check_argument_type(pr_osc_port, { "Integer" }); }
     catch    ( const std::exception &e )
@@ -419,28 +371,23 @@ int pyr_expose_oscquery_server(vmglobals *g, int n)
     {
         ERROTP      (e, ERR_HDR, "WS Port argument.");
         return      errFailed;
-    }    
+    }       
 
     auto oscq_protocol = std::make_unique<oscquery_server_protocol>
                          (sc::read_int(pr_osc_port), sc::read_int(pr_ws_port));
 
-    auto device = g_devices[device_id].get();
-    auto proto_mpx = dynamic_cast<net::multiplex_protocol*>(&device->get_protocol());
+    auto target_device  = dynamic_cast<net::generic_device*>(sc::get_node(rcvr));
+    auto proto_mpx      = dynamic_cast<net::multiplex_protocol*>(&target_device->get_protocol());
 
-    proto_mpx->expose_to(std::move(oscq_protocol));
+    proto_mpx           ->expose_to(std::move(oscq_protocol));
 
-    return      errNone;
+    return               errNone;
 }
 
 int pyr_expose_oscquery_mirror(vmglobals *g, int n)
 {
     pyrslot     *rcvr       = g->sp-1,
                 *pyr_host   = g->sp;
-
-    int      device_id;
-
-    try      { device_id = ossia::sc::get_node_id(rcvr); }
-    catch    ( const std::exception &e ) { return errReturn; }
 
     try      { ossia::sc::check_argument_type(pyr_host, { "String", "Symbol" }); }
     catch    ( const std::exception &e )
@@ -452,12 +399,10 @@ int pyr_expose_oscquery_mirror(vmglobals *g, int n)
     auto mirror_proto_ptr = std::make_unique<oscquery_mirror_protocol>
                            (sc::read_string(pyr_host));
 
-    auto mirror_proto = mirror_proto_ptr.get();
-    auto target_device = g_devices[device_id].get();
-    auto multiplex = dynamic_cast<net::multiplex_protocol*>(&target_device->get_protocol());
-    multiplex->expose_to(std::move(mirror_proto_ptr));
-
-    mirror_proto->update(*target_device);
+    auto target_device  = dynamic_cast<net::generic_device*>(sc::get_node(rcvr));
+    auto multiplex      = dynamic_cast<net::multiplex_protocol*>(&target_device->get_protocol());
+    multiplex           ->expose_to(std::move(mirror_proto_ptr));
+    mirror_proto_ptr    ->update(*target_device);
 
     return errNone;
 }
@@ -468,8 +413,6 @@ int pyr_expose_minuit(vmglobals *g, int n)
                 *pyr_remote_ip      = g->sp-2,
                 *pyr_remote_port    = g->sp-1,
                 *pyr_local_port     = g->sp;
-
-    int device_id = ossia::sc::get_node_id(rcvr);
 
     try      { ossia::sc::check_argument_type(pyr_remote_ip, { "String", "Symbol" }); }
     catch    ( const std::exception &e )
@@ -492,7 +435,7 @@ int pyr_expose_minuit(vmglobals *g, int n)
         return      errFailed;
     }    
 
-    auto target_device = g_devices[device_id].get();
+    auto target_device = dynamic_cast<net::generic_device*>(sc::get_node(rcvr));
     auto device_name = target_device->get_name();
 
     auto minuit_proto = std::make_unique<minuit_protocol>(
@@ -514,8 +457,6 @@ int pyr_expose_osc(vmglobals *g, int n)
                 *pyr_remote_port    = g->sp-1,
                 *pyr_local_port     = g->sp;
 
-    int device_id = ossia::sc::get_node_id(rcvr);
-
     try      { ossia::sc::check_argument_type(pyr_remote_ip, { "String", "Symbol" }); }
     catch    ( const std::exception &e )
     {
@@ -537,9 +478,7 @@ int pyr_expose_osc(vmglobals *g, int n)
         return      errFailed;
     }
 
-    auto target_device = g_devices[device_id].get();
-
-    //auto target_device = dynamic_cast<net::generic_device*>(g_devices[device_id]);
+    auto target_device = dynamic_cast<net::generic_device*>(sc::get_node(rcvr));
     auto multiplex = dynamic_cast<net::multiplex_protocol*>(&target_device->get_protocol());
 
     auto osc_proto = std::make_unique<osc_protocol>(
@@ -559,26 +498,25 @@ int pyr_instantiate_node(vmglobals *g, int n)
              *pr_name    = g->sp;
 
     ossia::net::node_base *parent_node;
-    ossia::net::node_base *node;
 
     try     { parent_node = ossia::sc::get_node(pr_parent); }
     catch   ( const ossia::sc::ex_arg_type &e)
     {        
         ERROTP      (e, ERR_HDR, "Parent Argument. Aborting...");
-        return      errReturn;
+        return      errFailed;
     }
     catch   ( const ossia::sc::ex_arg_undef &e)
     {
         ERROTP      (e, ERR_HDR, "Parent Argument. Trying in single-device mode...");
         //! TODO : if a single device, automatically create the node on this device
-        return      errReturn;
+        return      errFailed;
     }
 
     auto name = sc::read_string(pr_name);
     if ( parent_node->find_child(name) ) return errFailed;
 
-    node = &net::find_or_create_node(*parent_node, name);
-    ossia::sc::register_sc_node (rcvr, node);
+    auto node = &net::find_or_create_node(*parent_node, name);
+    sc::register_sc_node (rcvr, node);
 
     return errNone;
 }
@@ -850,7 +788,6 @@ int pyr_parameter_set_callback(vmglobals *g, int n)
 {
     pyrobject* obj  = slotRawObject(g->sp);
     auto param      = sc::get_node(g->sp)->get_parameter();
-    auto type       = param->get_value_type();
 
     param->add_callback([=](const ossia::value& v)
     {
@@ -990,32 +927,10 @@ int pyr_preset_save(vmglobals *g, int n)
     return errNone;
 }
 
-int pyr_ossia_dtor(vmglobals *g, int n)
-{
-    post("OSSIA: cleanup\n");
-
-    for(auto& device : g_devices)
-    {
-        device.reset();
-    }
-
-    g_nodes.clear();
-    g_devices.clear();
-
-    return errNone;
-}
-
 int pyr_free_device(vmglobals *g, int n)
 {
-    auto node = sc::get_node(g->sp);
-
-    for(auto& target : g_devices)
-    {
-        if(&target.get()->get_root_node() == node)
-        {
-            target.reset();
-        }
-    }
+    auto    node = sc::get_node(g->sp);
+    delete  node;
 
     auto device_obj = slotRawObject(g->sp);
     g->gc->Free(device_obj);
@@ -1079,7 +994,6 @@ void initOssiaPrimitives() {
     definePrimitive(base, index++, "_OSSIA_PresetSave", pyr_preset_save, 2, 0);
 
     definePrimitive(base, index++, "_OSSIA_FreeDevice", pyr_free_device, 1, 0);
-    definePrimitive(base, index++, "_OSSIA_Dtor", pyr_ossia_dtor, 1, 0);
 
     g_typemap.insert( bmap_t::value_type("Integer", val_type::INT));
     g_typemap.insert( bmap_t::value_type("Boolean", val_type::BOOL));
