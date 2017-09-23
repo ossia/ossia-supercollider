@@ -245,7 +245,7 @@ OSSIA_Node {
 
 OSSIA_Device : OSSIA_Node {
 
-	classvar g_devices;
+	classvar <g_devices;
 	var m_semaphore;
 
 	*initClass {
@@ -254,6 +254,11 @@ OSSIA_Device : OSSIA_Node {
 	}
 
 	*new {|name|
+
+		g_devices.do({|dev|
+			if(name == dev.name) { Error("Device already exists, aborting...").throw; };
+		});
+
 		^super.newFromChild.pyrDeviceCtor(name).stack_up();
 	}
 
