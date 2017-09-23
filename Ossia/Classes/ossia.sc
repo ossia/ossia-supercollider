@@ -5,13 +5,7 @@
 
 OSSIA {
 
-	*domain_list { |type ... args|
-		^OSSIA_domain_list(type, args);
-	}
-
-	*domain_range { |min, max|
-		^OSSIA_domain_range(min, max);
-	}
+	*domain { |min, max, values| ^OSSIA_domain(min, max, values)}
 
 	*access_mode { ^OSSIA_access_mode }
 	*bounding_mode { ^OSSIA_bounding_mode }
@@ -27,31 +21,63 @@ OSSIA {
 	*vec4f { |v1 = 0.0, v2 = 0.0, v3 = 0.0, v4 = 0.0|
 		^OSSIA_vec4f(v1, v2, v3, v4);
 	}
-
 }
 
-OSSIA_vec2f[slot] : OSSIA_FVector
+OSSIA_domain[slot]
+{
+	var m_domain;
+
+	*new { |min, max, values|
+
+		if((not(values.class == Array)) && (values.notNil)) {
+			Error("values argument should be an array").throw;
+		};
+
+		^super.new.domainCtor(min, max, values);
+	}
+
+	domainCtor { |min, max, values|
+		m_domain = [min, max, values];
+	}
+
+	at {|i| ^m_domain[i] }
+	put { |index, item| m_domain[index] = item }
+
+	min { ^this[0] }
+	min_ { |v| this[0] = v }
+	max { ^this[1] }
+	max_ { |v| this[1] = v }
+	values { ^this[2] }
+	values_ { |anArray|
+		if((not(anArray.class == Array)) && (anArray.notNil)) {
+			Error("values argument should be an array").throw;
+		};
+		this[2] = anArray;
+	}
+}
+
+OSSIA_vec2f : OSSIA_FVector
 {
 	*new {|v1 = 0.0, v2 = 0.0|
 		^super.new(2, v1.asFloat, v2.asFloat);
 	}
 }
 
-OSSIA_vec3f[slot] : OSSIA_FVector
+OSSIA_vec3f : OSSIA_FVector
 {
 	*new {|v1 = 0.0, v2 = 0.0, v3 = 0.0|
 		^super.new(3, v1.asFloat, v2.asFloat, v3.asFloat);
 	}
 }
 
-OSSIA_vec4f[slot] : OSSIA_FVector
+OSSIA_vec4f : OSSIA_FVector
 {
 	*new {|v1 = 0.0, v2 = 0.0, v3 = 0.0, v4 = 0.0|
 		^super.new(4, v1.asFloat, v2.asFloat, v3.asFloat, v4.asFloat);
 	}
 }
 
-OSSIA_FVector[slot] {
+OSSIA_FVector {
 
 	var am_val, m_sz;
 
@@ -72,47 +98,7 @@ OSSIA_FVector[slot] {
 	}
 
 	at {|i| ^am_val[i] }
-}
-
-OSSIA_domain_list[slot] {
-
-	var m_values, m_type;
-
-	*new { |type ... args|
-		^super.new.init(type, args);
-	}
-
-	init { |type, args|
-
-		m_values = args[0];
-		m_type = type;
-	}
-
-	at {|i| ^m_values[i] }
-}
-
-OSSIA_domain_range[slot] {
-
-	var m_values;
-
-	*new { |min, max|
-		^super.new.init(min,max);
-	}
-
-	init { |min, max|
-		if(min > max) { Error("OSSIA: Error! check min/max values").throw; };
-		m_values = Array.newClear(2);
-		m_values[0] = min;
-		m_values[1] = max;
-	}
-
-	at {|i|
-		if(i <= 1) { ^m_values[i] };
-	}
-
-	min { ^m_values[0] }
-	max { ^m_values[1] }
-
+	put { |index, item| am_val[index] = item }
 }
 
 OSSIA_access_mode {
@@ -245,7 +231,7 @@ OSSIA_Node {
 
 OSSIA_Device : OSSIA_Node {
 
-	classvar <g_devices;
+	classvar g_devices;
 	var m_semaphore;
 
 	*initClass {
@@ -547,11 +533,10 @@ OSSIA_Parameter : OSSIA_Node {
 	v_ { |value| this.value_(value) }
 	sv { |value| this.value_(value) }
 
-	// CONVENIENCE DEF MTHODS (change to kr, ar etc.) --> this will be in mgu
+	// CONVENIENCE DEF MTHODS
 
 	sym { ^(this.name ++ "_" ++ m_ptr_data.asSymbol).asSymbol }
 	aar { ^[this.sym, this.value()]; }
-
 
 	kr { | bind = true |
 

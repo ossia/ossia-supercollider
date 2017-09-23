@@ -219,7 +219,7 @@ ossia::domain ossia::sc::read_domain(pyrslot *s, ossia::val_type t)
         target      = slotRawObject(s)->slots;
     }
 
-    auto pre_domain = sc::read_vector<ossia::value>(s, sc::read_value);
+    auto pre_domain = sc::read_vector<ossia::value>(target, sc::read_value);
 
     if      (pre_domain.size() == 2)
             domain = ossia::make_domain(pre_domain[0], pre_domain[1]);
@@ -248,13 +248,18 @@ std::vector<T> ossia::sc::read_vector(pyrslot *s, T (*getter_function)(pyrslot*)
 template<class T, class U>
 T ossia::sc::read_array(pyrslot *s, U (*getter_function)(pyrslot*))
 {
-    T       array;
+    T array;
+    pyrobject* target;
+    auto classname = sc::read_classname(s);
 
-    auto    obj = slotRawObject(s);
-    if      (array.size() != obj->size) throw ARG_BAD_VALUE;
+    if(     classname == "Array" || classname == "List")
+            target = slotRawObject(s);
+    else    target = slotRawObject(slotRawObject(s)->slots);
 
-    for     (int i = 0; i < obj->size; ++i)
-            array[i] = getter_function(obj->slots+i);
+    if      (array.size() != target->size) throw ARG_BAD_VALUE;
+
+    for     (int i = 0; i < target->size; ++i)
+            array[i] = getter_function(target->slots+i);
 
     return  array;
 }
@@ -513,7 +518,10 @@ int pyr_instantiate_node(vmglobals *g, int n)
     }
 
     auto name = sc::read_string(pr_name);
-    if ( parent_node->find_child(name) ) return errFailed;
+    if ( parent_node->find_child(name) )
+    {
+        parent_node->remove_child(name);
+    }
 
     auto node = &net::find_or_create_node(*parent_node, name);
     sc::register_sc_node (rcvr, node);
@@ -559,8 +567,11 @@ int pyr_instantiate_parameter(vmglobals *g, int n)
 
     auto name = sc::read_string(pr_name);
 
-    // if node already exist, don't increment, return
-    if ( parent->find_child(name) ) return errFailed;
+    // if node already exist, don't increment, overwrite
+    if ( parent->find_child(name) )
+    {
+        parent->remove_child(name);
+    }
 
     // TYPE  ------------------------------------------------
     try     { type = sc::read_type(pr_type); }
