@@ -940,8 +940,8 @@ int pyr_preset_save(vmglobals *g, int n)
 
 int pyr_free_device(vmglobals *g, int n)
 {
-    auto    node = sc::get_node(g->sp);
-    delete  node;
+    auto    device = dynamic_cast<net::generic_device*>(sc::get_node(g->sp));
+    delete  device;
 
     auto device_obj = slotRawObject(g->sp);
     g->gc->Free(device_obj);
@@ -950,10 +950,17 @@ int pyr_free_device(vmglobals *g, int n)
     return errNone;
 }
 
+int pyr_ossia_tests(vmglobals *g, int n)
+{
+    return errNone;
+}
+
 void initOssiaPrimitives() {
 
     int base, index = 0;
     base = nextPrimitiveIndex();
+
+    definePrimitive(base, index++, "_OSSIA_Tests", pyr_ossia_tests, 1, 0);
 
     definePrimitive(base, index++, "_OSSIA_InstantiateDevice", pyr_instantiate_device, 2, 0);
     definePrimitive(base, index++, "_OSSIA_ExposeOSCQueryServer", pyr_expose_oscquery_server, 3, 0);

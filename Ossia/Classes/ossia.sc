@@ -364,6 +364,11 @@ OSSIA_Device : OSSIA_Node {
 		this.pyrFree();
 	}
 
+	*tests {
+		_OSSIA_Tests
+		^this.primitiveFailed
+	}
+
 }
 
 OSSIA_Parameter : OSSIA_Node {
