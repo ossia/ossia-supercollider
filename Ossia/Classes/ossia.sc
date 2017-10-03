@@ -152,12 +152,15 @@ OSSIA_Node {
 		^this.primitiveFailed
 	}
 
-	disabled {
+	is_disabled {
 		_OSSIA_NodeGetDisabled
 		^this.primitiveFailed
 	}
 
-	disabled_ { |aBool|
+	enable { ^this.pyrDisabled_(false) }
+	disable { ^this.pyrDisabled_(true) }
+
+	pyrDisabled_ { |aBool|
 		_OSSIA_NodeSetDisabled
 		^this.primitiveFailed
 	}
