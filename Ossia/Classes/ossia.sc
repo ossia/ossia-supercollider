@@ -242,7 +242,7 @@ OSSIA_Device : OSSIA_Node {
 	*new {|name|
 
 		g_devices.do({|dev|
-			if(name == dev.name) { Error("Device already exists, aborting...").throw; };
+			if(name == dev.name) { dev.free() };
 		});
 
 		^super.newFromChild.pyrDeviceCtor(name).stack_up();
