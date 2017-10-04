@@ -27,16 +27,20 @@ list::
 ## code::Impulse::,
 ## code::String::,
 ## code::Char::
-## code::Array::,
-## code::OSSIA.vec2f::,
-## code::OSSIA.vec3f::,
-## code::OSSIA.vec4f::
+## code::Array::, or code::List::
+## code::OSSIA_vec2f::,
+## code::OSSIA_vec3f::,
+## code::OSSIA_vec4f::
 ::
 
 ARGUMENT:: domain
-emphasis::optional:: - a strong::min/max range:: or a strong::set of accepted values::.
+emphasis::optional:: - a strong::min/max range:: and/or a strong::set of accepted values::.
 Passing an array of two values, e.g.: code::[0, 127]::, will set the min/max range.
-Passing an array of more than two values, e.g.: code::[0, 3, 5, 7]:: will set fixed accepted values. In order to set the domain to two accepted values only, pass it a code::OSSIA.domain_list::, eg.: code::OSSIA.domain_list(Integer, 64, 100)::.
+
+Passing an array of three values (with the third as an array) will set both min/max range and accepted values, e.g. : code::[0, 127, [0, 64, 88, 127]]:: .
+
+A convenience class (code::OSSIA_domain::) also exists.
+
 
 ARGUMENT:: default_value
 emphasis::optional:: - sets the value of the parameter at instantiation
@@ -48,12 +52,12 @@ list::
 ## code::'clip':: - clipped to the closest value in the range
 ## code::'low':: - only clips values lower than the min
 ## code::'high':: - only clips values higher than the max
-## code::'wrap':: -
-## code::'fold'::
+## code::'wrap':: - wraps values around the range
+## code::'fold':: - folds back values into the range
 ::
 
 ARGUMENT:: critical
-strong::OSCQuery protocol only:: - if code::true::, messages will be sent in strong::tcp :: instead of classic emphasis::osc-udp::, this guarantees that the message will be received on the other end of the network.
+strong::OSCQuery server protocol only:: - if code::true::, messages will be sent in strong::tcp :: instead of classic emphasis::osc-udp::, this guarantees that the message will be received on the other end of the network.
 
 ARGUMENT:: repetition_filter
 if code::true::, sending the same value multiple times will have no effect, it will only send it the first time.
@@ -73,6 +77,8 @@ list::
 ## code::'set'::, code::'w':: - parameter value is in strong::write-only:: mode (set).
 ## code::'get'::, code::'r':: - parameter value is in strong::read-only:: mode (get).
 ::
+
+A convenience class(code::OSSIA_access_mode::) can also be used, emphasis::e.g.:: code::OSSIA_access_mode.get::
 
 returns:: a code::Symbol:: with the access mode identifier
 
@@ -98,8 +104,8 @@ Parameter callbacks will inform you every time a parameter receives a message. O
 
 ARGUMENT:: aFunction
 to be evaluated whenever the parameter updates its value, it is passed the code::|value|:: argument, strong::e.g.:: :
-code::~param.callback = { |value|
-    format("value received: %", value).postln;
+
+code::~param.callback = { |value| format("value received: %", value).postln;
 }
 ::
 
@@ -119,8 +125,8 @@ list::
 ## code::'clip':: - clipped to the closest value in the range
 ## code::'low':: - only clips values lower than the min
 ## code::'high':: - only clips values higher than the max
-## code::'wrap':: -
-## code::'fold'::
+## code::'wrap':: - wraps values around the range
+## code::'fold':: - folds back values into the range
 ::
 
 METHOD:: domain
@@ -128,8 +134,22 @@ Domains allow to set a range of accepted values for a given parameter.
 
 ARGUMENT:: aList
 a strong::min/max range:: or a strong::set of accepted values::.
-Passing an array of two values, e.g.: code::[0, 127]::, will set the min/max range.
-Passing an array of more than two values, e.g.: code::[0, 3, 5, 7]:: will set fixed accepted values. In order to set the domain to two accepted values only, pass it a code::OSSIA.domain_list::, eg.: code::OSSIA.domain_list(Integer, 64, 100)::.
+Passing an array of strong::two values::, e.g.: code::[0, 127]::, will set the min/max range.
+
+Passing an array of strong::three values:: (with an code::Array:: as the third one), will set strong::both:: min/max range and accepted values, e.g. code::[0, 127, [0, 32, 64, 88, 127]]::
+
+A convenience class (code::OSSIA_domain::) can also be used.
+
+code::
+OSSIA_domain(0, 127);
+// only min/max range
+
+OSSIA_domain(values: [0, 32, 64, 88, 127]);
+// only accepted values
+
+OSSIA_domain(0, 127, [0, 32, 64, 88, 127]);
+// both
+::
 
 METHOD:: priority
 Nodes with the highest priority should execute first.
@@ -139,6 +159,17 @@ Units give a semantic meaning to the value of a parameter. See reference for a c
 
 ARGUMENT:: aUnit
 e.g. code::OSSIA_color.argb::
+
+METHOD::aar
+convenience method when instantiating new code::Synth:: (see link::Guides/OssiaReference:: for examples)
+
+returns:: an code::Array:: with the parameter's unique name and its current value
+
+METHOD::ar
+convenience method for audio-rate code::SynthDef::-binding (see link::Guides/OssiaReference:: for examples)
+
+METHOD::kr
+convenience method for control-rate code::SynthDef::-binding (see link::Guides/OssiaReference:: for examples)
 
 EXAMPLES::
 

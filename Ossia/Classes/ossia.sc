@@ -556,7 +556,16 @@ OSSIA_Parameter : OSSIA_Node {
 		^this.sym.kr
 	}
 
-	ar { ^this.sym.ar}
+	ar { | bind = true |
+
+		if(bind) {
+			if(not(m_has_callback)) { this.prEnableCallback; m_has_callback = true };
+			m_callback = { |v| Server.default.sendMsg("/n_set", 0, this.sym, v) };
+		}
+
+		^this.sym.ar
+	}
+
 	tr { ^this.sym.tr}
 
 }
