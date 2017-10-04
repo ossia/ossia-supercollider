@@ -75,8 +75,7 @@ code::
 NOTE:: Then we can strong::send values:: to this parameter::
 code::
 ~param.value = 347;
-~param.v_(347); // 1st shortcut
-~param.v = 347
+~param.v = 347; // 1st shortcut
 ~param.sv(347); // 2nd shortcut
 ::
 
@@ -97,12 +96,26 @@ code::
 
 subsection::Property binding
 
-This show how, for environments that support it, ossia objects can integrate with existing property environments.
+This show how, for environments that support it, ossia objects can integrate with existing property environments. In SuperCollider, parameters can easily be integrated with a code::SynthDef:: using the code::.aar::, code::.ar:: and code::.kr:: methods.
 
-WARNING::NotYetImplemented::
+code::
+~freq = OSSIA_Parameter(~some_device, 'freq', Float, [440, 880], 440);
+
+// bind the frequency parameter to the synthdef, becoming an argument
+
+d = SynthDef('sinosc', {
+	Out.ar(0, SinOsc.ar(~freq.kr, 0, 0.25));
+}).add;
+
+// the aar convenience method returns an array with parameter's name and current value
+x = Synth('sinosc', ~freq.aar);
+
+// changing the value of the parameter will automatically update the synth argument's value
+~freq.value = 660;
+::
 
 subsection::Device callbacks
-The example below shows how to automatically strong::wait for the device to be instantiated and exposed:: before creating your own tree of nodes & parameters, necessary if you want to build all in a single code region:
+The example below shows how to automatically strong::wait for the device to be instantiated and exposed:: before creating your own tree of nodes & parameters, necessary if you want to build all in a single code region, because the protocols' instantiation is asynchronous :
 
 code::
 (
@@ -121,8 +134,7 @@ code::
 // create a local device in any application, for this example, we'll do this directly in SuperCollider
 
 (
-d = OSSIA_Device('my_device');
-d.exposeOSCQueryServer(1234, 5678, {
+d = OSSIA_Device('my_device').exposeOSCQueryServer(1234, 5678, {
 	p = OSSIA_Parameter(d, 'my_parameter', Float).value_(22.5);
 });
 )
@@ -191,8 +203,10 @@ code::
 ::
 
 NOTE::Instead of a min / max, it is also possible to give a set of accepted values. Values that don't fit will be rounded to the closest accepted value.::
-
-WARNING:: Not Yet Implemented::
+code::
+~param = OSSIA_Parameter(~some_device, 'my_param', Integer,
+	OSSIA.domain(values: [1, 3, 5]), 3);
+::
 
 subsection::Bounding mode
 The bounding mode tells what happens when a value is outside of the min / max:
@@ -201,8 +215,8 @@ list::
 ##strong::CLIP:: : clipped to the closest value in the range.
 ##strong::LOW:: : only clips values lower than the min.
 ##strong::HIGH:: : only clips values higher than the max.
-##strong::WRAP:: : ...
-##strong::FOLD:: : ...
+##strong::WRAP:: : wraps values around the range
+##strong::FOLD:: : folds back values into the range
 ::
 
 The default is strong::FREE::.
