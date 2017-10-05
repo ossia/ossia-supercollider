@@ -332,7 +332,7 @@ set_target_properties(libossia PROPERTIES
     IMPORTED_LINK_INTERFACE_LANGUAGES "CXX"	
 	IMPORTED_LOCATION ${OSSIA_STATIC_LIB})
 
-target_include_directories(libsclang PRIVATE ${OSSIA_INCLUDE_DIR})							   					
+target_include_directories(libsclang PRIVATE ${OSSIA_INCLUDE_DIR})							   					
 
 add_executable(sclang LangSource/cmdLineFuncs.cpp ${RES_FILES})
 target_link_libraries(sclang libsclang)
