@@ -78,7 +78,7 @@ rm -rf libossia build
 )
 
 cd supercollider
-git checkout 3.8 # always latest stable version
+git checkout 3.9 # always latest stable version
 
 cd SCClassLibrary
 if [[ ! -d "Ossia" ]]; then

@@ -43,12 +43,13 @@
 #include "PyrArchiverT.h"
 #include "PyrDeepCopier.h"
 #include "PyrDeepFreezer.h"
-#include <ossia-sc/pyrossiaprim.h>
 //#include "Wacom.h"
 #include "InitAlloc.h"
-#include "../LangSource/SC_LanguageConfig.hpp"
-#include "SC_DirUtils.h"
+#include "SC_LanguageConfig.hpp"
+#include "SC_Filesystem.hpp"
 #include "SC_Version.hpp"
+#include <map>
+#include <ossia-sc/pyrossiaprim.h>
 
 #ifdef _WIN32
 # include <direct.h>
@@ -62,10 +63,13 @@
 
 #include "SCDocPrim.h"
 
+#include <boost/filesystem/path.hpp> // path
 
 #ifdef __clang__
 #pragma clang diagnostic ignored "-Warray-bounds"
 #endif
+
+namespace bfs = boost::filesystem;
 
 int yyparse();
 
@@ -89,8 +93,6 @@ typedef struct {
 } PrimitiveTable;
 
 extern PrimitiveTable gPrimitiveTable;
-
-extern PyrSlot o_nullframe;
 
 
 int getPrimitiveNumArgs(int index)
@@ -299,7 +301,9 @@ int prPrimitiveErrorString(struct VMGlobals *g, int numArgsPushed)
 {
 	PyrSlot *a;
 	PyrString *string;
-	const char *str;
+	std::string str;
+	std::exception_ptr lastPrimitiveException;
+	char *lastPrimitiveExceptionClass, *lastPrimitiveExceptionMethod;
 
 	a = g->sp;
 	switch (slotRawInt(&g->thread->primitiveError)) {
@@ -315,10 +319,29 @@ int prPrimitiveErrorString(struct VMGlobals *g, int numArgsPushed)
 		case errStackOverflow : str = "Stack overflow."; break;
 		case errOutOfMemory : str = "Out of memory."; break;
 		case errCantCallOS : str = "Operation cannot be called from this Process. Try using AppClock instead of SystemClock."; break;
+		case errException : {
+			lastPrimitiveException = g->lastExceptions[g->thread].first;
+			PyrMethod *meth = g->lastExceptions[g->thread].second;
+			lastPrimitiveExceptionClass = slotRawSymbol(&slotRawClass(&meth->ownerclass)->name)->name;
+			lastPrimitiveExceptionMethod = slotRawSymbol(&meth->name)->name;
+			if (lastPrimitiveException) {
+				try {
+					std::rethrow_exception(lastPrimitiveException);
+				} catch(const std::exception& e) {
 
+					const char *errorString = e.what();
+					str = std::string("caught exception \'") + errorString + "\' in primitive in method " + lastPrimitiveExceptionClass + ":" + lastPrimitiveExceptionMethod;
+					break;
+				}
+			} else {
+				str = std::string("caught unknown exception in primitive in method ") + lastPrimitiveExceptionClass + ":" + lastPrimitiveExceptionMethod;
+				break;
+			}
+			break;
+		}
 		default : str = "Failed.";
 	}
-	string = newPyrString(g->gc, str, 0, true);
+	string = newPyrString(g->gc, str.c_str(), 0, true);
 	SetObject(a, string);
 	return errNone;
 }
@@ -1471,16 +1494,20 @@ int objectPerform(struct VMGlobals *g, int numArgsPushed)
 
 	recvrSlot = g->sp - numArgsPushed + 1;
 	selSlot = recvrSlot + 1;
+
 	if (IsSym(selSlot)) {
 		selector = slotRawSymbol(selSlot);
+
 		// move args down one to fill selector's position
 		pslot = selSlot - 1;
 		qslot = selSlot;
-		for (m=0; m<numArgsPushed - 2; ++m) slotCopy(++pslot, ++qslot);
-		g->sp -- ;
-		numArgsPushed -- ;
+		for (m = 0; m < numArgsPushed - 2; ++m)
+            slotCopy(++pslot, ++qslot);
+		g->sp--;
+		numArgsPushed--;
 		// now the stack looks just like it would for a normal message send
 	} else if (IsObj(selSlot)) {
+        // if a List was passed, cast it to an Array, else throw an error
 		listSlot = selSlot;
 		if (slotRawObject(listSlot)->classptr == class_list) {
 			listSlot = slotRawObject(listSlot)->slots;
@@ -1488,23 +1515,36 @@ int objectPerform(struct VMGlobals *g, int numArgsPushed)
 		if (NotObj(listSlot) || slotRawObject(listSlot)->classptr != class_array) {
 			goto badselector;
 		}
+
 		PyrObject *array = slotRawObject(listSlot);
+
 		if (array->size < 1) {
 			error("Array must have a selector.\n");
 			return errFailed;
 		}
+
 		selSlot = array->slots;
+
+        // check the first slot to see if it's a symbol
+        if (NotSym(selSlot)) {
+            error("First element of array must be a Symbol selector.\n");
+            dumpObjectSlot(selSlot);
+            return errWrongType;
+        }
+
 		selector = slotRawSymbol(selSlot);
 
-		if (numArgsPushed>2) {
+		if (numArgsPushed > 2) {
 			qslot = recvrSlot + numArgsPushed;
 			pslot = recvrSlot + numArgsPushed + array->size - 2;
-			for (m=0; m<numArgsPushed - 2; ++m) slotCopy(--pslot, --qslot);
+			for (m = 0; m < numArgsPushed - 2; ++m)
+                slotCopy(--pslot, --qslot);
 		}
 
 		pslot = recvrSlot;
 		qslot = selSlot;
-		for (m=0,mmax=array->size-1; m<mmax; ++m) slotCopy(++pslot, ++qslot);
+		for (m = 0, mmax = array->size-1; m < mmax; ++m)
+            slotCopy(++pslot, ++qslot);
 
 		g->sp += array->size - 2;
 		numArgsPushed += array->size - 2;
@@ -3360,7 +3400,6 @@ int prRoutineStop(struct VMGlobals *g, int numArgsPushed)
 
 
 	if (state == tSuspended || state == tInit) {
-		slotCopy(&g->process->nowExecutingPath, &thread->oldExecutingPath);
 		SetNil(&g->thread->terminalValue);
 		SetRaw(&thread->state, tDone);
 		slotRawObject(&thread->stack)->size = 0;
@@ -3458,7 +3497,7 @@ static int prLanguageConfig_getLibraryPaths(struct VMGlobals * g, int numArgsPus
 
 	typedef SC_LanguageConfig::DirVector DirVector;
 
-	DirVector const & dirVector = (pathType == includePaths) ? gLanguageConfig->includedDirectories()
+	const DirVector& dirVector = (pathType == includePaths) ? gLanguageConfig->includedDirectories()
 															 : gLanguageConfig->excludedDirectories();
 
 	size_t numberOfPaths = dirVector.size();
@@ -3466,7 +3505,8 @@ static int prLanguageConfig_getLibraryPaths(struct VMGlobals * g, int numArgsPus
 	SetObject(result, resultArray);
 
 	for (size_t i = 0; i != numberOfPaths; ++i) {
-		PyrString * pyrString = newPyrString(g->gc, dirVector[i].c_str(), 0, true);
+		const std::string& utf8_path = SC_Codecvt::path_to_utf8_str(dirVector[i]);
+		PyrString * pyrString = newPyrString(g->gc, utf8_path.c_str(), 0, true);
 		SetObject(resultArray->slots + i, pyrString);
 		g->gc->GCWriteNew( resultArray,  pyrString ); // we know pyrString is white so we can use GCWriteNew
 		resultArray->size++;
@@ -3493,10 +3533,11 @@ static int prLanguageConfig_addLibraryPath(struct VMGlobals * g, int numArgsPush
 	if (error)
 		return errWrongType;
 
+	const bfs::path& native_path = SC_Codecvt::utf8_str_to_path(path);
 	if (pathType == includePaths)
-		gLanguageConfig->addIncludedDirectory(path);
+		gLanguageConfig->addIncludedDirectory(native_path);
 	else
-		gLanguageConfig->addExcludedDirectory(path);
+		gLanguageConfig->addExcludedDirectory(native_path);
 	return errNone;
 }
 
@@ -3519,10 +3560,11 @@ static int prLanguageConfig_removeLibraryPath(struct VMGlobals * g, int numArgsP
 	if (error)
 		return errWrongType;
 
+	const bfs::path& native_path = SC_Codecvt::utf8_str_to_path(path);
 	if (pathType == includePaths)
-		gLanguageConfig->removeIncludedDirectory(path);
+		gLanguageConfig->removeIncludedDirectory(native_path);
 	else
-		gLanguageConfig->removeExcludedDirectory(path);
+		gLanguageConfig->removeExcludedDirectory(native_path);
 	return errNone;
 }
 
@@ -3539,7 +3581,8 @@ static int prLanguageConfig_removeExcludePath(struct VMGlobals * g, int numArgsP
 static int prLanguageConfig_getCurrentConfigPath(struct VMGlobals * g, int numArgsPushed)
 {
 	PyrSlot *a = g->sp;
-	PyrString* str = newPyrString(g->gc, gLanguageConfig->getCurrentConfigPath(), 0, false);
+	const std::string& config_path = SC_Codecvt::path_to_utf8_str(gLanguageConfig->getConfigPath());
+	PyrString* str = newPyrString(g->gc, config_path.c_str(), 0, false);
     if(str->size == 0) {
         SetNil(a);
     } else {
@@ -3553,36 +3596,39 @@ static int prLanguageConfig_writeConfigFile(struct VMGlobals * g, int numArgsPus
 {
 	PyrSlot *fileString = g->sp;
 
-	char path[MAXPATHLEN];
 	if (NotNil(fileString)) {
+		char path[MAXPATHLEN];
 		bool error = slotStrVal(fileString, path, MAXPATHLEN);
 		if (error)
 			return errWrongType;
+
+		const bfs::path& config_path = SC_Codecvt::utf8_str_to_path(path);
+		gLanguageConfig->writeLibraryConfigYAML(config_path);
 	} else {
-		sc_GetUserConfigDirectory(path, PATH_MAX);
-		sc_AppendToPath(path, MAXPATHLEN, "sclang_conf.yaml");
+		const bfs::path& config_path =
+			SC_Filesystem::instance().getDirectory(SC_Filesystem::DirName::UserConfig)
+			/ "sclang_conf.yaml";
+		gLanguageConfig->writeLibraryConfigYAML(config_path);
 	}
 
-	gLanguageConfig->writeLibraryConfigYAML(path);
 	return errNone;
 }
 
-extern bool gPostInlineWarnings;
 static int prLanguageConfig_getPostInlineWarnings(struct VMGlobals * g, int numArgsPushed)
 {
 	PyrSlot *result = g->sp;
-	SetBool(result, gPostInlineWarnings);
+	SetBool(result, SC_LanguageConfig::getPostInlineWarnings());
 	return errNone;
 }
 
 static int prLanguageConfig_setPostInlineWarnings(struct VMGlobals * g, int numArgsPushed)
 {
-	PyrSlot *arg    = g->sp;
+	PyrSlot *arg = g->sp;
 
 	if (IsTrue(arg))
-		gPostInlineWarnings = true;
+		SC_LanguageConfig::setPostInlineWarnings(true);
 	else if (IsFalse(arg))
-		gPostInlineWarnings = false;
+		SC_LanguageConfig::setPostInlineWarnings(false);
 	else
 		return errWrongType;
 
@@ -3791,11 +3837,10 @@ void doPrimitive(VMGlobals* g, PyrMethod* meth, int numArgsPushed)
 	g->gc->SanityCheck();
 #endif
 	} catch (std::exception& ex) {
-		post("caught exception in primitive %s:%s\n", slotRawSymbol(&slotRawClass(&meth->ownerclass)->name)->name, slotRawSymbol(&meth->name)->name);
-		error(ex.what());
+		g->lastExceptions[g->thread] = std::make_pair(std::current_exception(), meth);
 		err = errException;
 	} catch (...) {
-		post("caught exception in primitive %s:%s\n", slotRawSymbol(&slotRawClass(&meth->ownerclass)->name)->name, slotRawSymbol(&meth->name)->name);
+		g->lastExceptions[g->thread] = std::make_pair(nullptr, meth);
 		err = errException;
 	}
 	if (err <= errNone) g->sp -= g->numpop;
@@ -3833,11 +3878,10 @@ void doPrimitiveWithKeys(VMGlobals* g, PyrMethod* meth, int allArgsPushed, int n
 		try {
 			err = ((PrimitiveWithKeysHandler)def[1].func)(g, allArgsPushed, numKeyArgsPushed);
 		} catch (std::exception& ex) {
-			post("caught exception in primitive %s:%s\n", slotRawSymbol(&slotRawClass(&meth->ownerclass)->name)->name, slotRawSymbol(&meth->name)->name);
-			error(ex.what());
+			g->lastExceptions[g->thread] = std::make_pair(std::current_exception(), meth);
 			err = errException;
 		} catch (...) {
-			post("caught exception in primitive %s:%s\n", slotRawSymbol(&slotRawClass(&meth->ownerclass)->name)->name, slotRawSymbol(&meth->name)->name);
+			g->lastExceptions[g->thread] = std::make_pair(nullptr, meth);
 			err = errException;
 		}
 		if (err <= errNone) g->sp -= g->numpop;
@@ -3902,11 +3946,10 @@ void doPrimitiveWithKeys(VMGlobals* g, PyrMethod* meth, int allArgsPushed, int n
 		try {
 			err = (*def->func)(g, numArgsNeeded);
 		} catch (std::exception& ex) {
-			post("caught exception in primitive %s:%s\n", slotRawSymbol(&slotRawClass(&meth->ownerclass)->name)->name, slotRawSymbol(&meth->name)->name);
-			error(ex.what());
+			g->lastExceptions[g->thread] = std::make_pair(std::current_exception(), meth);
 			err = errException;
 		} catch (...) {
-			post("caught exception in primitive %s:%s\n", slotRawSymbol(&slotRawClass(&meth->ownerclass)->name)->name, slotRawSymbol(&meth->name)->name);
+			g->lastExceptions[g->thread] = std::make_pair(nullptr, meth);
 			err = errException;
 		}
 		if (err <= errNone) g->sp -= g->numpop;
@@ -4189,7 +4232,7 @@ void initPrimitives()
 	initMathPrimitives();
 	initSignalPrimitives();
 	initArrayPrimitives();
-    initOssiaPrimitives();
+	initOssiaPrimitives();
 
 void initSymbolPrimitives();
 	initSymbolPrimitives();
@@ -4242,15 +4285,17 @@ void initCocoaFilePrimitives();
 void initSchedPrimitives();
 	initSchedPrimitives();
 
+#ifdef SC_HIDAPI
 void initHIDAPIPrimitives();
 	initHIDAPIPrimitives();
+#endif
 
 #if defined(__APPLE__) || defined(HAVE_ALSA) || defined(HAVE_PORTMIDI)
 void initMIDIPrimitives();
 	initMIDIPrimitives();
 #endif
 
-#if !defined(_WIN32) && !defined(SC_IPHONE) && !defined(__OpenBSD__) && !defined(__NetBSD__) && !defined(__APPLE__)
+#if defined __linux__
 void initLIDPrimitives();
 	initLIDPrimitives();
 #endif
@@ -4293,14 +4338,15 @@ void initOpenGLPrimitives();
 	initSCDocPrimitives();
 
 	s_recvmsg = getsym("receiveMsg");
-	post("\tNumPrimitives = %d\n", nextPrimitiveIndex());
+	post("\tFound %d primitives.\n", nextPrimitiveIndex());
 }
 
 void deinitPrimitives()
 {
+#ifdef SC_HIDAPI
 	void deinitHIDAPIPrimitives();
 	deinitHIDAPIPrimitives();
-
+#endif
 #if defined(HAVE_PORTMIDI) || defined(HAVE_ALSA)
 void deinitMIDIPrimitives();
 	deinitMIDIPrimitives();
@@ -4315,5 +4361,3 @@ void initThreads()
 	s_prrunnextthread = getsym("prRunNextThread");
 	s_prready = getsym("prReady");
 }
-
-
