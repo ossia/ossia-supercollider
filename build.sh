@@ -135,6 +135,9 @@ yes | cp -rf Ossia/Primitives/pyrossiaprim.h build/ossia-inst/include/ossia-sc
 # build supercollider
 cd supercollider
 
+# remove packaged boost, which gets somehow included even with SYSTEM_BOOST=ON
+rm -rf external_libraries/boost
+
 mkdir -p build
 cd build
 cmake .. -DCMAKE_PREFIX_PATH=$QT_PATH -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../build -DSYSTEM_BOOST=ON -DBoost_INCLUDE_DIR=$BOOST_INCLUDE -DBoost_DIR=$BOOST_ROOT
