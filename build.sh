@@ -1,5 +1,25 @@
 #!/bin/bash -eux
- export PATH=$PATH:/usr/local/bin
+
+export PATH=$PATH:/usr/local/bin
+export OS_IS_LINUX=0
+export OS_IS_OSX=0
+export BOOST_ROOT=""
+export BOOST_INCLUDE=""
+export QT_PATH=""
+
+ if [[ -d "/proc" ]]; then
+  export OS_IS_LINUX=1
+  BOOST_ROOT=$1
+  BOOST_INCLUDE=$2
+  QT_PATH=$3
+else
+  export OS_IS_OSX=1
+  BOOST_ROOT="/usr/local/opt/boost"
+  BOOST_INCLUDE="/usr/local/opt/boost/include"
+  QT_PATH="/usr/local/opt/qt@5.5"
+fi
+
+# CLONING REPOSITORIES
 
  if [[ ! -d "supercollider" ]]; then
      echo "cloning supercollider repository..."
@@ -27,17 +47,8 @@ else
   )
 fi
 
-mkdir -p build
-(
-cd build
-export OS_IS_LINUX=0
-export OS_IS_OSX=0
-if [[ -d "/proc" ]]; then
-  export OS_IS_LINUX=1
-else
-  export OS_IS_OSX=1
+if [ $OS_IS_OSX = 1 ]; then 
 
-  # Set-up OS X dependencies
   export HOMEBREW_BIN=$(command -v brew)
   if [[ "$HOMEBREW_BIN" == "" ]]; then
     echo "Homebrew is not installed."
@@ -66,19 +77,27 @@ else
   fi
 fi  
 
+
+mkdir -p build
+
+(
+
+cd build
+
 # CMake and build libossia
 echo "now building libossia..."
-cmake ../libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=ossia-inst -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_ROOT=/usr/local/opt/boost/include -DOSSIA_NO_QT=1
+cmake ../libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=ossia-inst -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_ROOT=$BOOST_ROOT
 make -j8
 echo "libossia built succesfully... installing"
 make install
 
 # Cleaning up
 rm -rf libossia build
+
 )
 
 cd supercollider
-git checkout 3.9 # always latest stable version
+git checkout 3.9
 
 cd SCClassLibrary
 if [[ ! -d "Ossia" ]]; then
@@ -118,7 +137,7 @@ cd supercollider
 
 mkdir -p build
 cd build
-cmake .. -DCMAKE_PREFIX_PATH=/usr/local/opt/qt@5.5 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=../../build -DSYSTEM_BOOST=ON -DBoost_INCLUDE_DIR=/usr/local/opt/boost/include -DBoost_DIR=/usr/local/opt/boost
+cmake .. -DCMAKE_PREFIX_PATH=$QT_PATH -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../build -DSYSTEM_BOOST=ON -DBoost_INCLUDE_DIR=$BOOST_INCLUDE -DBoost_DIR=$BOOST_ROOT
 make -j8
 make install
 
