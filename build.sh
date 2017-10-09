@@ -68,30 +68,44 @@ if [ "$DISTRO" = "darwin" ]; then
   BOOST_INCLUDE="/usr/local/opt/boost/include"
   QT_PATH="/usr/local/opt/qt@5.5"
 
-elif [ "$DISTRO" = "ubuntu" ]; then
+elif [ "$DISTRO" = "ubuntu" ] || [ "$DISTRO" = "elementary" ] ; then
 
   # checking/installing ossia & supercollider dependencies
+  
+  #sudo add-apt-repository ppa:beineri/opt-qt591-trusty
   sudo apt update
-  sudo apt-get install build-essential libjack-dev libsndfile1-dev libxt-dev libfftw3-dev libudev-dev \
+  sudo apt-get install libjack-dev libsndfile1-dev libxt-dev libfftw3-dev libudev-dev \
   qt5-default qt5-qmake qttools5-dev qttools5-dev-tools qtdeclarative5-dev libqt5webkit5-dev \
   qtpositioning5-dev libqt5sensors5-dev libqt5opengl5-dev \
   libavahi-compat-libdnssd-dev git wget 
 
   sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y 
-  sudo add-apt-repository ppa:beineri/opt-qt591-trusty -y
   sudo apt update
-  sudo apt -y install g++-7 qt-latest
+  sudo apt-get install g++-7 qt-latest
 
   # installing cmake
-  wget https://cmake.org/files/v3.9/cmake-3.9.1-Linux-x86_64.tar.gz
-  tar xaf cmake-3.9.1-Linux-x86_64.tar.gz
+
+  if [[ ! -d "cmake-3.9.1-Linux-x86_64" ]]; then
+  	wget https://cmake.org/files/v3.9/cmake-3.9.1-Linux-x86_64.tar.gz
+  	tar xaf cmake-3.9.1-Linux-x86_64.tar.gz
+  fi
 
   # installing boost
-  wget http://downloads.sourceforge.net/project/boost/boost/1.65.0/boost_1_65_0.tar.bz2
-  tar xaf boost_1_65_0.tar.bz2
+  if [[ ! -d "boost_1_65_0" ]]; then
+	(
+	 wget http://downloads.sourceforge.net/project/boost/boost/1.65.0/boost_1_65_0.tar.bz2
+  	 tar xaf boost_1_65_0.tar.bz2
+	)
+  fi
 
-  BOOST_ROOT=$(pwd)/boost_1_65_0
-  BOOST_INCLUDE=$(pwd)/boost_1_65_0/include
+  if [[ ! -d "boost_1_65_0/lib" ]]; then
+  	cd boost_1_65_0
+  	./bootstrap.sh --with-libraries=thread,system,filesystem,program_options,regex --prefix=lib/
+  	./b2
+  fi
+
+  BOOST_ROOT=$(pwd)/boost_1_65_0/stage
+  BOOST_INCLUDE=$(pwd)/boost_1_65_0/boost
   QT_PATH=/opt/qt59/lib/cmake/Qt5
 
 elif [ "$DISTRO" = "archlinux" ]; then
