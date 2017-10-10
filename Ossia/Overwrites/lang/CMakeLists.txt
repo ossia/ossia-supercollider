@@ -74,7 +74,7 @@ set(sclang_sources
 	LangSource/SimpleStack.cpp
 	LangSource/VMGlobals.cpp
 	LangSource/dumpByteCodes.cpp
-	../../Ossia/Primitives/pyrossiaprim.cpp
+	../../../Ossia/Primitives/pyrossiaprim.cpp
 
 	${CMAKE_SOURCE_DIR}/common/SC_Filesystem_macos.cpp
 	${CMAKE_SOURCE_DIR}/common/SC_Filesystem_win.cpp
@@ -251,7 +251,8 @@ endif()
 
 if (Boost_FOUND)
 	target_include_directories(libsclang PUBLIC ${Boost_INCLUDE_DIRS})
-	target_link_libraries(libsclang ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_REGEX_LIBRARY} ${Boost_FILESYSTEM_LIBRARY})
+    target_link_libraries(libsclang Boost::thread Boost::system Boost::regex Boost::filesystem)
+    #target_link_libraries(libsclang ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_REGEX_LIBRARY} ${Boost_FILESYSTEM_LIBRARY})
 else()
 	target_include_directories(libsclang PUBLIC ${CMAKE_SOURCE_DIR}/external_libraries/boost)
 	target_link_libraries(libsclang boost_thread)
@@ -322,8 +323,8 @@ endif()
 target_link_libraries(libsclang ${YAMLCPP_LIBRARY})
 
 # OSSIA as imported target
-set(OSSIA_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/../build/ossia-inst/include)
-set(OSSIA_STATIC_LIB ${CMAKE_SOURCE_DIR}/../build/ossia-inst/lib/static/libossia.a)
+set(OSSIA_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/../../install/libossia/include)
+set(OSSIA_STATIC_LIB ${CMAKE_SOURCE_DIR}/../../install/libossia/lib/static/libossia.a)
 
 add_library(libossia STATIC IMPORTED)
 set_target_properties(libossia PROPERTIES 

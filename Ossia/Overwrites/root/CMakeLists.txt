@@ -255,8 +255,8 @@ if (NOT WIN32)
 endif()
 
 if(SYSTEM_BOOST)
-  set(Boost_USE_MULTITHREADED      ON)
-  find_package( Boost 1.50.0 COMPONENTS  thread system filesystem program_options regex test_exec_monitor )
+  set(Boost_USE_MULTITHREADED ON)
+  find_package( Boost REQUIRED COMPONENTS thread system filesystem program_options regex test_exec_monitor )
 endif()
 
 if (Boost_FOUND)
@@ -299,8 +299,8 @@ if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
             set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -stdlib=libc++")
         endif()
     else()
-        set( CMAKE_CXX_STANDARD 14 )
-        set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -std=c++14")
+        set( CMAKE_CXX_STANDARD 17 )
+        set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -std=c++1z")
 
         if(CMAKE_COMPILER_IS_CLANG)
             # workaround

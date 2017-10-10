@@ -1,7 +1,9 @@
 # folders to exclude
-supercollider/
-libossia/
+repositories/
+dependencies/
 build/
+install/
+
 
 # Prerequisites
 *.d
