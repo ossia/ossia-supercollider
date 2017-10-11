@@ -256,7 +256,7 @@ endif()
 
 if(SYSTEM_BOOST)
   set(Boost_USE_MULTITHREADED ON)
-  find_package( Boost REQUIRED COMPONENTS thread system filesystem program_options regex test_exec_monitor )
+  find_package( Boost 1.58 REQUIRED COMPONENTS thread system filesystem program_options regex test_exec_monitor )
 endif()
 
 if (Boost_FOUND)

@@ -250,7 +250,7 @@ endif()
 
 
 if (Boost_FOUND)
-	target_include_directories(libsclang PUBLIC ${Boost_INCLUDE_DIRS})
+    #target_include_directories(libsclang PUBLIC ${Boost_INCLUDE_DIRS})
     target_link_libraries(libsclang Boost::thread Boost::system Boost::regex Boost::filesystem)
     #target_link_libraries(libsclang ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_REGEX_LIBRARY} ${Boost_FILESYSTEM_LIBRARY})
 else()

@@ -117,8 +117,8 @@
   	( 
   	mkdir boost
   	cd boost_1_65_1
-  	 ./bootstrap.sh --with-libraries=atomic,date_time,chrono,exception,timer,thread,system,filesystem,program_options,regex,test --prefix=../boost
-  	 ./b2 install
+  	 ./bootstrap.sh --with-libraries=atomic,date_time,chrono,exception,timer,thread,system,filesystem,program_options,regex,test --prefix=../boost --with-toolset=gcc
+  	 ./b2 install --toolset=gcc-7
   	rm -rf ../boost_1_65_1.tar.bz2
   	)
     fi
