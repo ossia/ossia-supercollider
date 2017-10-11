@@ -1,5 +1,7 @@
   #!/bin/bash -eux
 
+  export OFFLINE=0
+  export CUSTOM_BOOST=0
   export OS_IS_LINUX=0
   export OS_IS_OSX=0
   export BOOST_ROOT=""
@@ -7,6 +9,17 @@
   export BOOST_LIBS=""
   export QT_PATH=""
   export DISTRO=""
+
+  if [ "$1" = "offline" ]; then
+      OFFLINE=1
+  fi
+
+  if ! [ -z "$2" ] && ! [  -z "$3" ]; then
+      echo "BOOST CUSTOM"
+      CUSTOM_BOOST=1
+      BOOST_INCLUDE=$2
+      BOOST_LIBS=$3
+  fi
 
   # PLATFORM ----------------------------------------------------------------------------
 
@@ -40,7 +53,7 @@
 
     # CHECK HOMEBREW DEPENDENCIE
     
-    if [ "$1" != "offline" ]; then
+    if [ OFFLINE = 0 ]; then
 
       # QT 5.5 (required for supercollider's webkit
       if brew ls --versions qt@5.5 > /dev/null; then
@@ -77,7 +90,7 @@
 
     # checking/installing ossia & supercollider dependencies
     
-    if [ "$1" != "offline" ]; then
+    if [ $OFFLINE = 0 ]; then
         #sudo add-apt-repository ppa:beineri/opt-qt591-trusty
         #sudo apt update
         sudo apt-get install libjack-dev libsndfile1-dev libxt-dev libfftw3-dev libudev-dev \
@@ -87,46 +100,54 @@
         sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y 
         #sudo apt update
         sudo apt-get install g++-7 qt-latest
-    fi
 
-    # installing non-packaged dependencies
+        # installing non-packaged dependencies
+        if [ ! -d "dependencies" ]; then
+            mkdir dependencies
+        fi
+
+        (
+
+        cd dependencies
+        
+        # cmake
+        if [[ ! -d "cmake-3.9.3-Linux-x86_64" ]]; then
+    	    wget https://cmake.org/files/v3.9/cmake-3.9.3-Linux-x86_64.tar.gz
+    	    tar xaf cmake-3.9.3-Linux-x86_64.tar.gz
+  	        rm -rf cmake-3.9.3-Linux-x86_64.tar.gz
+        fi
+
+        # download and install boost
+        if [ $CUSTOM_BOOST = 0 ]; then
+
+            if [ ! -d "boost_1_65_1" ]; then	
+  	            wget http://downloads.sourceforge.net/project/boost/boost/1.65.1/boost_1_65_1.tar.bz2
+    	        tar xaf boost_1_65_1.tar.bz2
+            fi
+
+            if [[ ! -d "boost" ]]; then
+  	            ( 
+  	            mkdir boost
+  	            cd boost_1_65_1
+  	            ./bootstrap.sh --with-libraries=atomic,date_time,chrono,exception,timer,thread,system,filesystem,program_options,regex,test \
+                    --prefix=../boost \
+                    --with-toolset=gcc
+  	            ./b2 install --toolset=gcc-7
+  	            rm -rf ../boost_1_65_1.tar.bz2
+  	            )
+            fi
+
+        fi
+
+        )
+        
+        if [ $CUSTOM_BOOST = 0 ]; then
+            BOOST_ROOT="$(pwd)/dependencies/boost" 
+            BOOST_LIBS="$(pwd)/dependencies/boost/lib"
+            BOOST_INCLUDE="$(pwd)/dependencies/boost/include"
+        fi
+    fi
     
-    (
-      if [ ! -d "dependencies" ]; then
-  	    mkdir dependencies
-      fi
-
-      cd dependencies
-
-    # cmake
-
-    if [[ ! -d "cmake-3.9.3-Linux-x86_64" ]]; then
-    	wget https://cmake.org/files/v3.9/cmake-3.9.3-Linux-x86_64.tar.gz
-    	tar xaf cmake-3.9.3-Linux-x86_64.tar.gz
-  	rm -rf cmake-3.9.3-Linux-x86_64.tar.gz
-    fi
-
-    # download and install boost
-
-    if [[ ! -d "boost_1_65_1" ]]; then	
-  	wget http://downloads.sourceforge.net/project/boost/boost/1.65.1/boost_1_65_1.tar.bz2
-    	tar xaf boost_1_65_1.tar.bz2
-    fi
-
-    if [[ ! -d "boost" ]]; then
-  	( 
-  	mkdir boost
-  	cd boost_1_65_1
-  	 ./bootstrap.sh --with-libraries=atomic,date_time,chrono,exception,timer,thread,system,filesystem,program_options,regex,test --prefix=../boost --with-toolset=gcc
-  	 ./b2 install --toolset=gcc-7
-  	rm -rf ../boost_1_65_1.tar.bz2
-  	)
-    fi
-
-    )
-    BOOST_ROOT="$(pwd)/dependencies/boost" 
-    BOOST_LIBS="$(pwd)/dependencies/boost/lib"
-    BOOST_INCLUDE="$(pwd)/dependencies/boost/include"
     QT_PATH="/opt/qt59/lib/cmake/Qt5"
 
   elif [ "$DISTRO" = "archlinux" ]; then
@@ -151,7 +172,7 @@
     echo "cloning supercollider repository..."
     git clone --recursive https://github.com/supercollider/supercollider
 
-  elif [ "$1" != "offline" ]; then
+  elif [ $OFFLINE = 0 ]; then
 
     (
       echo "supercollider already downloaded..."
@@ -167,7 +188,7 @@
     echo "now cloning libossia"
     git clone --recursive https://github.com/OSSIA/libossia
 
-  elif [ "$1" != "offline" ]; then
+  elif [ $OFFLINE = 0 ]; then
     (
       echo "libossia already downloaded..."
       echo "checking for updates..."
@@ -188,13 +209,17 @@
 
     # CMake and build libossia
     echo "now building libossia..."
+
+    echo "$BOOST_ROOT"
+    echo "$BOOST_INCLUDE"
+    echo "$BOOST_LIBS"
     
     if [ "$DISTRO" = "darwin" ]; then
 
         cmake ../../repositories/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_ROOT=$BOOST_ROOT
 
    elif [ "$DISTRO" = "ubuntu" ] || [ "$DISTRO" = "elementary" ]; then
-    ../../dependencies/cmake-3.9.3-Linux-x86_64/bin/cmake  ../../repositories/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_INCLUDEDIR=$BOOST_INCLUDE -DBOOST_LIBRARYDIR=$BOOST_LIBS -DCMAKE_C_COMPILER=/usr/bin/gcc-7 -DCMAKE_CXX_COMPILER=/usr/bin/g++-7
+    ../../dependencies/cmake-3.9.3-Linux-x86_64/bin/cmake  ../../repositories/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_INCLUDEDIR=$BOOST_INCLUDE -DBOOST_LIBRARYDIR=$BOOST_LIBS -DCMAKE_C_COMPILER=/usr/bin/gcc-7 -DCMAKE_CXX_COMPILER=/usr/bin/g++-7 -DBOOST_ROOT=$BOOST_ROOT -DBoost_NO_SYSTEM_PATHS=ON
     
    fi
    
@@ -264,7 +289,7 @@
       cmake ../../repositories/supercollider -DCMAKE_PREFIX_PATH=$QT_PATH -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/supercollider -DSYSTEM_BOOST=ON -DBoost_DIR=$BOOST_ROOT
 
   elif [ "$DISTRO" = "ubuntu" ] || [ "$DISTRO" = "elementary" ]; then 
-    ../../dependencies/cmake-3.9.3-Linux-x86_64/bin/cmake ../../repositories/supercollider -DCMAKE_C_COMPILER=/usr/bin/gcc-7 -DCMAKE_CXX_COMPILER=/usr/bin/g++-7 -DCMAKE_PREFIX_PATH=$QT_PATH -DCMAKE_BUILD_TYPE=Release -DSYSTEM_BOOST=ON -DBOOST_INCLUDEDIR=$BOOST_INCLUDE -DBOOST_LIBRARYDIR=$BOOST_LIBS -DBOOST_NO_SYSTEM_PATHS=ON -DBOOST_ROOT=$BOOST_ROOT
+    ../../dependencies/cmake-3.9.3-Linux-x86_64/bin/cmake ../../repositories/supercollider -DCMAKE_C_COMPILER=/usr/bin/gcc-7 -DCMAKE_CXX_COMPILER=/usr/bin/g++-7 -DCMAKE_PREFIX_PATH=$QT_PATH -DCMAKE_BUILD_TYPE=Release -DSYSTEM_BOOST=ON -DBOOST_INCLUDEDIR=$BOOST_INCLUDE -DBOOST_LIBRARYDIR=$BOOST_LIBS -DBoost_NO_SYSTEM_PATHS=ON -DBOOST_ROOT=$BOOST_ROOT
   fi
 
   make -j8
