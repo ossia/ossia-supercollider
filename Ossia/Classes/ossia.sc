@@ -386,6 +386,14 @@ OSSIA_Parameter : OSSIA_Node {
 			                bounding_mode, critical, repetition_filter);
 	}
 
+	*array { |size, parent_node, name, type, domain, default_value,
+		bounding_mode = 'free', critical = false , repetition_filter = false|
+		^Array.fill(size, {|i|
+			OSSIA_Parameter(parent_node, format(name,i), type, domain, default_value, bounding_mode,
+				critical, repetition_filter);
+		});
+	}
+
 	parameterCtor { |parent, name, type, domain, default_value,
 		bounding_mode, critical, repetition_filter|
 
