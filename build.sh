@@ -91,15 +91,10 @@
     # checking/installing ossia & supercollider dependencies
     
     if [ $OFFLINE = 0 ]; then
-        #sudo add-apt-repository ppa:beineri/opt-qt591-trusty
-        #sudo apt update
-        sudo apt-get install libjack-dev libsndfile1-dev libxt-dev libfftw3-dev libudev-dev \
+        sudo apt -y install libjack-dev libsndfile1-dev libxt-dev libfftw3-dev libudev-dev \
         qt5-default qt5-qmake qttools5-dev qttools5-dev-tools qtdeclarative5-dev libqt5webkit5-dev \
         qtpositioning5-dev libqt5sensors5-dev libqt5opengl5-dev \
-        libavahi-compat-libdnssd-dev git wget 
-        sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y 
-        #sudo apt update
-        sudo apt-get install g++-7 qt-latest
+        libavahi-compat-libdnssd-dev git wget gcc
 
         # installing non-packaged dependencies
         if [ ! -d "dependencies" ]; then
@@ -130,9 +125,8 @@
   	            mkdir boost
   	            cd boost_1_65_1
   	            ./bootstrap.sh --with-libraries=atomic,date_time,chrono,exception,timer,thread,system,filesystem,program_options,regex,test \
-                    --prefix=../boost \
-                    --with-toolset=gcc
-  	            ./b2 install --toolset=gcc-7
+                    --prefix=../boost
+  	            ./b2 install
   	            rm -rf ../boost_1_65_1.tar.bz2
   	            )
             fi
@@ -148,7 +142,7 @@
         fi
     fi
     
-    QT_PATH="/opt/qt59/lib/cmake/Qt5"
+    QT_PATH="/usr/lib"
 
   elif [ "$DISTRO" = "archlinux" ]; then
     sudo pacman -S git cmake 
@@ -219,7 +213,7 @@
         cmake ../../repositories/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_ROOT=$BOOST_ROOT
 
    elif [ "$DISTRO" = "ubuntu" ] || [ "$DISTRO" = "elementary" ]; then
-    ../../dependencies/cmake-3.9.3-Linux-x86_64/bin/cmake  ../../repositories/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_INCLUDEDIR=$BOOST_INCLUDE -DBOOST_LIBRARYDIR=$BOOST_LIBS -DCMAKE_C_COMPILER=/usr/bin/gcc-7 -DCMAKE_CXX_COMPILER=/usr/bin/g++-7 -DBOOST_ROOT=$BOOST_ROOT -DBoost_NO_SYSTEM_PATHS=ON
+    ../../dependencies/cmake-3.9.3-Linux-x86_64/bin/cmake  ../../repositories/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_INCLUDEDIR=$BOOST_INCLUDE -DBOOST_LIBRARYDIR=$BOOST_LIBS -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DBOOST_ROOT=$BOOST_ROOT -DBoost_NO_SYSTEM_PATHS=ON
     
    fi
    
@@ -286,10 +280,10 @@
   cd build/supercollider
 
   if [ "$DISTRO" = "darwin" ]; then 
-      cmake ../../repositories/supercollider -DCMAKE_PREFIX_PATH=$QT_PATH -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/supercollider -DSYSTEM_BOOST=ON -DBoost_DIR=$BOOST_ROOT
+      cmake ../../repositories/supercollider -DCMAKE_PREFIX_PATH=$QT_PATH -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/supercollider -DSYSTEM_BOOST=ON -DBOOST_ROOT=$BOOST_ROOT
 
   elif [ "$DISTRO" = "ubuntu" ] || [ "$DISTRO" = "elementary" ]; then 
-    ../../dependencies/cmake-3.9.3-Linux-x86_64/bin/cmake ../../repositories/supercollider -DCMAKE_C_COMPILER=/usr/bin/gcc-7 -DCMAKE_CXX_COMPILER=/usr/bin/g++-7 -DCMAKE_PREFIX_PATH=$QT_PATH -DCMAKE_BUILD_TYPE=Release -DSYSTEM_BOOST=ON -DBOOST_INCLUDEDIR=$BOOST_INCLUDE -DBOOST_LIBRARYDIR=$BOOST_LIBS -DBoost_NO_SYSTEM_PATHS=ON -DBOOST_ROOT=$BOOST_ROOT
+    ../../dependencies/cmake-3.9.3-Linux-x86_64/bin/cmake ../../repositories/supercollider -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DCMAKE_PREFIX_PATH=$QT_PATH -DCMAKE_BUILD_TYPE=Release -DSYSTEM_BOOST=ON -DBOOST_INCLUDEDIR=$BOOST_INCLUDE -DBOOST_LIBRARYDIR=$BOOST_LIBS -DBoost_NO_SYSTEM_PATHS=ON -DBOOST_ROOT=$BOOST_ROOT -DCMAKE_INSTALL_PREFIX=../../install/supercollider
   fi
 
   make -j8
