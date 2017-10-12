@@ -91,7 +91,7 @@
     # checking/installing ossia & supercollider dependencies
     
     if [ $OFFLINE = 0 ]; then
-        sudo apt -y install libjack-dev libsndfile1-dev libxt-dev libfftw3-dev libudev-dev \
+        sudo apt -y install jackd1 libjack-dev libsndfile1-dev libxt-dev libfftw3-dev libudev-dev \
         qt5-default qt5-qmake qttools5-dev qttools5-dev-tools qtdeclarative5-dev libqt5webkit5-dev \
         qtpositioning5-dev libqt5sensors5-dev libqt5opengl5-dev \
         libavahi-compat-libdnssd-dev git wget gcc
@@ -142,7 +142,7 @@
         fi
     fi
     
-    QT_PATH="/usr/lib"
+    QT_PATH="/usr/lib/x86_64-linux-gnu"
 
   elif [ "$DISTRO" = "archlinux" ]; then
     sudo pacman -S git cmake 
@@ -247,6 +247,9 @@
   yes | cp -rf Ossia/Overwrites/lang/CMakeLists.txt repositories/supercollider/lang
   yes | cp -rf Ossia/Overwrites/lang/PyrPrimitive.cpp repositories/supercollider/lang/LangPrimSource
   yes | cp -rf Ossia/Overwrites/testsuite/CMakeLists.txt repositories/supercollider/testsuite/supernova
+  yes | cp -rf Ossia/Overwrites/server/scsynth/CMakeLists.txt repositories/supercollider/server/scsynth
+  yes | cp -rf Ossia/Overwrites/server/supernova/CMakeLists.txt repositories/supercollider/server/supernova
+
   yes | cp -rf Ossia/Classes/ossia.sc repositories/supercollider/SCClassLibrary/Ossia
   yes | cp -rf Ossia_light repositories/supercollider/SCClassLibrary
   yes | cp -rf Ossia/HelpSource/Guides/OssiaReference.schelp repositories/supercollider/HelpSource/Guides
