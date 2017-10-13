@@ -86,7 +86,7 @@
     BOOST_INCLUDE="/usr/local/opt/boost/include"
     QT_PATH="/usr/local/opt/qt@5.5"
 
-  elif [ "$DISTRO" = "ubuntu" ] || [ "$DISTRO" = "elementary" ] ; then
+  elif [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "elementary" ] ; then
 
     # checking/installing ossia & supercollider dependencies
     
@@ -212,7 +212,7 @@
 
         cmake ../../repositories/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_ROOT=$BOOST_ROOT
 
-   elif [ "$DISTRO" = "ubuntu" ] || [ "$DISTRO" = "elementary" ]; then
+   elif [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "elementary" ]; then
     ../../dependencies/cmake-3.9.3-Linux-x86_64/bin/cmake  ../../repositories/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_INCLUDEDIR=$BOOST_INCLUDE -DBOOST_LIBRARYDIR=$BOOST_LIBS -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DBOOST_ROOT=$BOOST_ROOT -DBoost_NO_SYSTEM_PATHS=ON
     
    fi
@@ -285,7 +285,7 @@
   if [ "$DISTRO" = "darwin" ]; then 
       cmake ../../repositories/supercollider -DCMAKE_PREFIX_PATH=$QT_PATH -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/supercollider -DSYSTEM_BOOST=ON -DBOOST_ROOT=$BOOST_ROOT
 
-  elif [ "$DISTRO" = "ubuntu" ] || [ "$DISTRO" = "elementary" ]; then 
+  elif [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "elementary" ]; then 
     ../../dependencies/cmake-3.9.3-Linux-x86_64/bin/cmake ../../repositories/supercollider -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DCMAKE_PREFIX_PATH=$QT_PATH -DCMAKE_BUILD_TYPE=Release -DSYSTEM_BOOST=ON -DBOOST_INCLUDEDIR=$BOOST_INCLUDE -DBOOST_LIBRARYDIR=$BOOST_LIBS -DBoost_NO_SYSTEM_PATHS=ON -DBOOST_ROOT=$BOOST_ROOT -DCMAKE_INSTALL_PREFIX=../../install/supercollider
   fi
 
