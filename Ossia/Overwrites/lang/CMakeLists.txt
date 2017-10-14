@@ -17,18 +17,17 @@ include_directories(${CMAKE_SOURCE_DIR}/include/common
                     LangSource
                     LangPrimSource
 
-                    ${CMAKE_SOURCE_DIR}/external_libraries/hidapi/hidapi
-                    ${CMAKE_SOURCE_DIR}/external_libraries/hidapi/hidapi_parser
-
                     ${CMAKE_SOURCE_DIR}/external_libraries/nova-tt
                     LangSource/Bison
 )
+
 
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
 	find_package(ALSA)
 endif()
 
 find_package(Readline 5.0)
+
 find_package(Sndfile)
 
 if (SC_QT OR SC_IDE)
@@ -38,7 +37,6 @@ else ()
 endif ()
 
 set(sclang_sources
-	LangPrimSource/SC_HID_api.cpp
 	LangPrimSource/SC_Wii.cpp
 	LangPrimSource/PyrSignalPrim.cpp
 	LangPrimSource/PyrSched.cpp
@@ -76,14 +74,17 @@ set(sclang_sources
 	LangSource/SimpleStack.cpp
 	LangSource/VMGlobals.cpp
 	LangSource/dumpByteCodes.cpp
-    ../../Ossia/Primitives/pyrossiaprim.cpp
+	../../../Ossia/Primitives/pyrossiaprim.cpp
+
+	${CMAKE_SOURCE_DIR}/common/SC_Filesystem_macos.cpp
+	${CMAKE_SOURCE_DIR}/common/SC_Filesystem_win.cpp
+	${CMAKE_SOURCE_DIR}/common/SC_Filesystem_unix.cpp
+	${CMAKE_SOURCE_DIR}/common/SC_Filesystem_iphone.cpp
 
 	${CMAKE_SOURCE_DIR}/common/fftlib.c
 	${CMAKE_SOURCE_DIR}/common/Samp.cpp
 	${CMAKE_SOURCE_DIR}/common/SC_AllocPool.cpp
-	${CMAKE_SOURCE_DIR}/common/SC_DirUtils.cpp
 	${CMAKE_SOURCE_DIR}/common/SC_Reply.cpp
-	${CMAKE_SOURCE_DIR}/common/SC_StandAloneInfo_Darwin.cpp
 	${CMAKE_SOURCE_DIR}/common/SC_StringBuffer.cpp
 	${CMAKE_SOURCE_DIR}/common/SC_StringParser.cpp
 	${CMAKE_SOURCE_DIR}/common/SC_TextUtils.cpp
@@ -93,7 +94,7 @@ set(sclang_sources
 )
 
 if(APPLE)
-	set_property(SOURCE ${CMAKE_SOURCE_DIR}/common/SC_DirUtils.cpp PROPERTY COMPILE_FLAGS -xobjective-c++)
+	set_property(SOURCE ${CMAKE_SOURCE_DIR}/common/SC_Filesystem_macos.cpp PROPERTY COMPILE_FLAGS -xobjective-c++)
 
 	list(APPEND sclang_sources ${CMAKE_SOURCE_DIR}/common/SC_Apple.mm)
 	set_source_files_properties(${CMAKE_SOURCE_DIR}/common/SC_Apple.mm PROPERTIES COMPILE_FLAGS "-x objective-c++ -fobjc-exceptions")
@@ -156,6 +157,15 @@ if(WIN32)
  "<CMAKE_RC_COMPILER> -O coff <DEFINES> -i <SOURCE> -o <OBJECT>")
 endif(WIN32)
 
+if(SC_HIDAPI)
+    list(APPEND sclang_sources LangPrimSource/SC_HID_api.cpp)
+    include_directories(
+        ${CMAKE_SOURCE_DIR}/external_libraries/hidapi/hidapi
+        ${CMAKE_SOURCE_DIR}/external_libraries/hidapi/hidapi_parser
+    )
+    add_definitions(-DSC_HIDAPI)
+endif(SC_HIDAPI)
+
 if(SC_WII)
 	if(CMAKE_SYSTEM_NAME MATCHES "Linux")
 		find_package(CWiid)
@@ -216,14 +226,16 @@ if(FALSE) # libsclang is a shared library
   target_compile_definitions(libsclang INTERFACE BUILDING_SCLANG)
 endif()
 
-target_compile_definitions(libsclang PRIVATE HAVE_HIDAPI)
-target_link_libraries( libsclang hidapi hidapi_parser )
+if(SC_HIDAPI)
+  target_compile_definitions(libsclang PRIVATE HAVE_HIDAPI)
+  target_link_libraries( libsclang hidapi hidapi_parser )
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND HID_HIDRAW)
-  target_link_libraries( libsclang ${UDEV_LIBRARIES})
-endif()
-if(HID_LIBUSB)
-  target_link_libraries( libsclang ${LIBUSB_1_LIBRARIES})
+  if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" AND HID_HIDRAW)
+    target_link_libraries( libsclang ${UDEV_LIBRARIES})
+  endif()
+  if(HID_LIBUSB)
+    target_link_libraries( libsclang ${LIBUSB_1_LIBRARIES})
+  endif()
 endif()
 
 
@@ -238,8 +250,9 @@ endif()
 
 
 if (Boost_FOUND)
-	target_include_directories(libsclang PUBLIC ${Boost_INCLUDE_DIRS})
-	target_link_libraries(libsclang ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_REGEX_LIBRARY} ${Boost_FILESYSTEM_LIBRARY})
+    #target_include_directories(libsclang PUBLIC ${Boost_INCLUDE_DIRS})
+    target_link_libraries(libsclang Boost::thread Boost::system Boost::regex Boost::filesystem)
+    #target_link_libraries(libsclang ${Boost_THREAD_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_REGEX_LIBRARY} ${Boost_FILESYSTEM_LIBRARY})
 else()
 	target_include_directories(libsclang PUBLIC ${CMAKE_SOURCE_DIR}/external_libraries/boost)
 	target_link_libraries(libsclang boost_thread)
@@ -293,8 +306,10 @@ if (FFTW3F_FOUND)
 	target_link_libraries(libsclang ${FFTW3F_LIBRARY})
 endif()
 
-if (WIN32)
+if (WIN32 AND SC_HIDAPI)
 	target_link_libraries(libsclang wsock32 ws2_32 portmidi iphlpapi hid)
+elseif(WIN32)
+	target_link_libraries(libsclang wsock32 ws2_32 portmidi iphlpapi)
 endif()
 
 if (GC_SANITYCHECK)
@@ -308,8 +323,8 @@ endif()
 target_link_libraries(libsclang ${YAMLCPP_LIBRARY})
 
 # OSSIA as imported target
-set(OSSIA_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/../build/ossia-inst/include)
-set(OSSIA_STATIC_LIB ${CMAKE_SOURCE_DIR}/../build/ossia-inst/lib/static/libossia.a)
+set(OSSIA_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/../../install/libossia/include)
+set(OSSIA_STATIC_LIB ${CMAKE_SOURCE_DIR}/../../install/libossia/lib/static/libossia.a)
 
 add_library(libossia STATIC IMPORTED)
 set_target_properties(libossia PROPERTIES 
@@ -317,8 +332,8 @@ set_target_properties(libossia PROPERTIES
 	INTERFACE_INCLUDE_DIRECTORIES "${OSSIA_INCLUDE_DIR}"
     IMPORTED_LINK_INTERFACE_LANGUAGES "CXX"	
 	IMPORTED_LOCATION ${OSSIA_STATIC_LIB})
-							   							   
-target_include_directories(libsclang PRIVATE ${OSSIA_INCLUDE_DIR})
+
+target_include_directories(libsclang PRIVATE ${OSSIA_INCLUDE_DIR})							   					
 
 add_executable(sclang LangSource/cmdLineFuncs.cpp ${RES_FILES})
 target_link_libraries(sclang libsclang)
@@ -343,24 +358,6 @@ elseif(WIN32)
         set_target_properties(sclang PROPERTIES RUNTIME_OUTPUT_DIRECTORY "$<CONFIG>")
     endif(NOT MSVC)
 
-    add_custom_command(TARGET sclang
-        PRE_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/SCClassLibrary" $<TARGET_FILE_DIR:sclang>/SCClassLibrary
-        COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/HelpSource" $<TARGET_FILE_DIR:sclang>/HelpSource
-        COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/examples" $<TARGET_FILE_DIR:sclang>/examples
-        COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/sounds" $<TARGET_FILE_DIR:sclang>/sounds
-    )
-
-    if(NOT SC_QT)  # TODP: clean (and cross platform) solution for language boot for case SC_QT=OFF (this is a quick fix for language boot error)
-        add_custom_command(TARGET sclang
-            PRE_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/SCClassLibrary/Common/GUI" $<TARGET_FILE_DIR:sclang>/SCClassLibrary/scide_scqt/Common/GUI
-            COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/SCClassLibrary/JITLib/GUI" $<TARGET_FILE_DIR:sclang>/SCClassLibrary/scide_scqt/JITLib/GUI
-            COMMAND ${CMAKE_COMMAND} -E remove_directory $<TARGET_FILE_DIR:sclang>/SCClassLibrary/Common/GUI
-            COMMAND ${CMAKE_COMMAND} -E remove_directory $<TARGET_FILE_DIR:sclang>/SCClassLibrary/JITLib/GUI
-        )
-    endif(NOT SC_QT)
-
     set(SC_WIN_DLL_DIRS)
     if(SNDFILE_LIBRARY_DIR)
       list(APPEND SC_WIN_DLL_DIRS "${SNDFILE_LIBRARY_DIR}")
@@ -381,10 +378,23 @@ elseif(WIN32)
     endif(QT_BIN_PATH)
 
     if(SC_IDE)
+      if(MSYS)
         add_custom_command(TARGET sclang
-            POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_directory $<TARGET_FILE_DIR:sclang> $<TARGET_FILE_DIR:SuperCollider>
-      )
+          POST_BUILD
+          COMMAND "${CMAKE_SOURCE_DIR}/platform/windows/junctions.sh" "remove" "$<TARGET_FILE_DIR:sclang>"
+          COMMAND ${CMAKE_COMMAND} -E copy_directory $<TARGET_FILE_DIR:sclang> $<TARGET_FILE_DIR:SuperCollider>
+          COMMAND "${CMAKE_SOURCE_DIR}/platform/windows/junctions.sh" "create" "${CMAKE_SOURCE_DIR}" "$<TARGET_FILE_DIR:sclang>"
+          COMMENT "Copying files in target sclang to target SuperCollider (scide) and creating links to SCClassLibrary e.a."
+        )
+      else()
+        add_custom_command(TARGET sclang
+          POST_BUILD
+          COMMAND cmd /C ${CMAKE_SOURCE_DIR}/platform/windows/junctions.bat remove \"$<TARGET_FILE_DIR:sclang>\"
+          COMMAND ${CMAKE_COMMAND} -E copy_directory $<TARGET_FILE_DIR:sclang> $<TARGET_FILE_DIR:SuperCollider>
+          COMMAND cmd /C ${CMAKE_SOURCE_DIR}/platform/windows/junctions.bat create \"$<TARGET_FILE_DIR:sclang>\" \"${CMAKE_SOURCE_DIR}\"
+          COMMENT "Copying files in target sclang to target SuperCollider (scide) and creating links to SCClassLibrary e.a."
+        )
+      endif()
     endif(SC_IDE)
 
     install(TARGETS sclang
