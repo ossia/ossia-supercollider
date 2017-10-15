@@ -152,6 +152,11 @@ OSSIA_Node {
 		^this.primitiveFailed
 	}
 
+	explore {
+		_OSSIA_NodeExplore
+		^this.primitiveFailed
+	}
+
 	is_disabled {
 		_OSSIA_NodeGetDisabled
 		^this.primitiveFailed

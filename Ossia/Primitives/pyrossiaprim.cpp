@@ -105,7 +105,6 @@ void ossia::sc::register_sc_node(pyrslot *s, net::node_base *node) noexcept
     SetPtr  (ptr_var, node);
 }
 
-
 ossia::net::node_base* ossia::sc::get_node(pyrslot *s)
 {
     try { check_argument_type(s, { "OSSIA_Parameter", "OSSIA_Node",
@@ -496,6 +495,24 @@ int pyr_expose_osc(vmglobals *g, int n)
     return errNone;
 }
 
+int pyr_device_set_logger(vmglobals *g, int n)
+{
+    auto device = dynamic_cast<net::generic_device*>(ossia::sc::get_node(g->sp));
+    auto mpx = dynamic_cast<net::multiplex_protocol*>(&device->get_protocol());
+
+    /*for(const auto& protocol : mpx->get_protocols())
+    {
+        protocol.set_logger(g_logger);
+    }*/
+
+    return errNone;
+}
+
+int pyr_device_remove_logger(vmglobals *g, int n)
+{
+    return errNone;
+}
+
 int pyr_instantiate_node(vmglobals *g, int n)
 {        
     pyrslot  *rcvr       = g->sp-2,
@@ -657,6 +674,46 @@ int pyr_node_get_children_names(vmglobals *g, int n)
     auto node = sc::get_node(g->sp);
     std::vector<std::string> children_names = node->children_names();
     sc::write_array<std::vector<std::string>,std::string>(g, g->sp, children_names, sc::write_string);
+
+    return errNone;
+}
+
+void explore(net::node_base& node, std::vector<ossia::value>& res)
+{
+    for (const auto& child : node.children_copy())
+    {
+        std::vector<ossia::value> res_c;
+        res_c.push_back(child->get_name());
+
+        if(auto parameter = child->get_parameter())
+        {
+            auto type = net::get_value_type(*child).value_or(ossia::val_type::NONE);
+            auto amode = net::get_access_mode(*child);
+            auto bmode = net::get_bounding_mode(*child);
+
+            res_c.push_back(format_listed_attribute<ossia::val_type>(type, g_typemap));
+            res_c.push_back(parameter->fetch_value());
+
+            res_c.push_back(format_listed_attribute<access_mode>(*amode, g_accessmap));
+            res_c.push_back(format_listed_attribute<bounding_mode>(*bmode, g_bmodemap));
+            res_c.push_back(net::get_description(*child).value_or("no description"));
+            //res_c.push_back(net::get_tags(*child).value_or("nil"));
+            res_c.push_back(net::get_critical(*child));
+            res_c.push_back((bool)net::get_repetition_filter(*child));
+        }
+
+        res.push_back(res_c);
+        explore(*child, res);
+    }
+}
+
+int pyr_node_explore(vmglobals *g, int n)
+{
+    auto node = sc::get_node(g->sp);
+    std::vector<ossia::value> tree;
+    explore(*node, tree);
+
+    sc::write_value(g, g->sp, tree);
 
     return errNone;
 }
@@ -852,7 +909,6 @@ int pyr_parameter_set_bounding_mode(vmglobals *g, int n)
    return       errNone;
 }
 
-
 int pyr_parameter_set_repetition_filter(vmglobals *g, int n)
 {
     auto param      = sc::get_node(g->sp-1)->get_parameter();
@@ -961,6 +1017,8 @@ void initOssiaPrimitives() {
     base = nextPrimitiveIndex();
 
     definePrimitive(base, index++, "_OSSIA_Tests", pyr_ossia_tests, 1, 0);
+    definePrimitive(base, index++, "_OSSIA_DeviceSetLogger", pyr_device_set_logger, 1, 0);
+    definePrimitive(base, index++, "_OSSIA_DeviceRemoveLogger", pyr_device_remove_logger, 1, 0);
 
     definePrimitive(base, index++, "_OSSIA_InstantiateDevice", pyr_instantiate_device, 2, 0);
     definePrimitive(base, index++, "_OSSIA_ExposeOSCQueryServer", pyr_expose_oscquery_server, 3, 0);
@@ -971,6 +1029,7 @@ void initOssiaPrimitives() {
     definePrimitive(base, index++, "_OSSIA_InstantiateParameter", pyr_instantiate_parameter, 9, 0);
     definePrimitive(base, index++, "_OSSIA_InstantiateNode", pyr_instantiate_node, 3, 0);
 
+    definePrimitive(base, index++, "_OSSIA_NodeExplore", pyr_node_explore, 1, 0);
     definePrimitive(base, index++, "_OSSIA_NodeGetName", pyr_node_get_name, 1, 0);
     definePrimitive(base, index++, "_OSSIA_NodeGetChildrenNames", pyr_node_get_children_names, 1, 0);
     definePrimitive(base, index++, "_OSSIA_NodeGetFullPath", pyr_node_get_full_path, 1, 0);
