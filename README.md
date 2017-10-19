@@ -53,8 +53,7 @@ SynthDef('sinosc', {
 }).add;
 
 // create synth with parameters' current values
-~args = ~freq.aar ++ ~mul.aar ++ ~pan.aar;
-x = Synth('sinosc', ~args);
+x = Synth('sinosc', d.snapshot);
 
 // now every change in the parameters' values will be reported on the sc-server
 ~freq.value = 220;
