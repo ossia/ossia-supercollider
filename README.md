@@ -31,7 +31,7 @@ it is also available here: https://ossia.github.io/?javascript#introduction
 
 #### quick usage example
 
-```
+```js
 (
 d = OSSIA_Device("ossia-collider");
 d.exposeOSCQueryServer(1234, 5678, {
