@@ -1,4 +1,4 @@
-# ossia-sc : libossia bindings for supercollider
+# ossia-supercollider : libossia bindings for supercollider
 
 ## Installing
 
