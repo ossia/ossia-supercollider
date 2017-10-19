@@ -16,6 +16,8 @@
 #include <ossia/preset/exception.hpp>
 #include <spdlog/spdlog.h>
 
+#include <sstream>
+
 extern bool compiledOK;
 
 using namespace ossia;
@@ -678,42 +680,67 @@ int pyr_node_get_children_names(vmglobals *g, int n)
     return errNone;
 }
 
-void explore(net::node_base& node, std::vector<ossia::value>& res)
+void make_node_sheet
+(net::node_base& node, std::vector<ossia::value>& destination, bool with_attributes = false)
+{
+    std::vector<ossia::value> sheet;
+    auto name = node.get_name();
+    std::string separator("_");
+    std::stringstream stream;
+    std::string unique_name;
+    stream << &node;
+
+    unique_name = name + separator + stream.str();
+    sheet.push_back(unique_name);
+
+    if(auto parameter = node.get_parameter())
+    {
+        sheet.push_back(parameter->fetch_value());
+    }
+
+    if(with_attributes)
+    {
+        auto type = net::get_value_type(node).value_or(ossia::val_type::NONE);
+        auto amode = net::get_access_mode(node);
+        auto bmode = net::get_bounding_mode(node);
+        sheet.push_back(format_listed_attribute<ossia::val_type>(type, g_typemap));
+        sheet.push_back(format_listed_attribute<access_mode>(*amode, g_accessmap));
+        sheet.push_back(format_listed_attribute<bounding_mode>(*bmode, g_bmodemap));
+        sheet.push_back(net::get_description(node).value_or("no description"));
+        //res_c.push_back(net::get_tags(*child).value_or("nil"));
+        sheet.push_back(net::get_critical(node));
+        sheet.push_back((bool)net::get_repetition_filter(node));
+    }
+
+    destination.push_back(sheet);
+}
+
+void explore(net::node_base& node, std::vector<ossia::value>& tree, bool with_attributes = false)
 {
     for (const auto& child : node.children_copy())
     {
-        std::vector<ossia::value> res_c;
-        res_c.push_back(child->get_name());
-
-        if(auto parameter = child->get_parameter())
-        {
-            auto type = net::get_value_type(*child).value_or(ossia::val_type::NONE);
-            auto amode = net::get_access_mode(*child);
-            auto bmode = net::get_bounding_mode(*child);
-
-            res_c.push_back(format_listed_attribute<ossia::val_type>(type, g_typemap));
-            res_c.push_back(parameter->fetch_value());
-
-            res_c.push_back(format_listed_attribute<access_mode>(*amode, g_accessmap));
-            res_c.push_back(format_listed_attribute<bounding_mode>(*bmode, g_bmodemap));
-            res_c.push_back(net::get_description(*child).value_or("no description"));
-            //res_c.push_back(net::get_tags(*child).value_or("nil"));
-            res_c.push_back(net::get_critical(*child));
-            res_c.push_back((bool)net::get_repetition_filter(*child));
-        }
-
-        res.push_back(res_c);
-        explore(*child, res);
+        make_node_sheet(*child, tree, with_attributes);
+        explore(*child, tree);
     }
+}
+
+int pyr_node_get_sheet(vmglobals *g, int n)
+{
+    std::vector<ossia::value> sheet;
+    make_node_sheet(*sc::get_node(g->sp), sheet, true);
+
+    sc::write_value(g, g->sp, sheet);
+    return errNone;
 }
 
 int pyr_node_explore(vmglobals *g, int n)
 {
-    auto node = sc::get_node(g->sp);
+    // also used to make synth argument arrays
+    auto node = sc::get_node(g->sp-1);
     std::vector<ossia::value> tree;
-    explore(*node, tree);
+    explore(*node, tree, IsTrue(g->sp));
 
-    sc::write_value(g, g->sp, tree);
+    sc::write_value(g, g->sp-1, tree);
 
     return errNone;
 }
@@ -1029,7 +1056,7 @@ void initOssiaPrimitives() {
     definePrimitive(base, index++, "_OSSIA_InstantiateParameter", pyr_instantiate_parameter, 9, 0);
     definePrimitive(base, index++, "_OSSIA_InstantiateNode", pyr_instantiate_node, 3, 0);
 
-    definePrimitive(base, index++, "_OSSIA_NodeExplore", pyr_node_explore, 1, 0);
+    definePrimitive(base, index++, "_OSSIA_NodeExplore", pyr_node_explore, 2, 0);
     definePrimitive(base, index++, "_OSSIA_NodeGetName", pyr_node_get_name, 1, 0);
     definePrimitive(base, index++, "_OSSIA_NodeGetChildrenNames", pyr_node_get_children_names, 1, 0);
     definePrimitive(base, index++, "_OSSIA_NodeGetFullPath", pyr_node_get_full_path, 1, 0);
