@@ -4,7 +4,7 @@
 
 ### macOS
 
-- clone this repository, cd into it
+- recursive-clone this repository (`git clone --recursive https://github.com/OSSIA/ossia-supercollider.git`), cd into it
 - make sure homebrew is installed, otherwise run `/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"`
 - run ./build.sh
 - resulting .app will be located in `install/supercollider/SuperCollider` 
@@ -13,7 +13,7 @@ the script clones a fresh version of supercollider (as of this day, version 3.9d
 
 ### Linux (tested on debian-like systems, unstable on archlinux for now)
 
-- clone this repository, cd into it
+- recursive-clone this repository (`git clone --recursive https://github.com/OSSIA/ossia-supercollider.git`), cd into it
 
 if you have boost 1.65 already installed on your system:
 - run `./build.sh online /path/to/boost/include/dir /path/to/boost/libs/dir` 
