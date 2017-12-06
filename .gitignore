@@ -3,6 +3,7 @@ dependencies/
 build/
 install/
 
+*.DS_Store
 
 # Prerequisites
 *.d
