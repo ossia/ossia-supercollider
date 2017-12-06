@@ -1,3 +1,6 @@
-[submodule "repositories/libossia"]
-	path = repositories/libossia
+[submodule "submodules/libossia"]
+	path = submodules/libossia
 	url = https://github.com/OSSIA/libossia.git
+[submodule "submodules/supercollider"]
+	path = submodules/supercollider
+	url = https://github.com/pchdev/supercollider.git

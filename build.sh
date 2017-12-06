@@ -152,47 +152,6 @@
     
   fi
 
-
-  # CLONING REPOSITORIES ------------------------------------------------------------------------
-  (
-
-  if [ ! -d "repositories" ]; then
-  	mkdir repositories
-  fi
-
-  cd repositories
-
-  if [ ! -d "supercollider" ]; then
-    echo "cloning supercollider repository..."
-    git clone --recursive https://github.com/supercollider/supercollider
-
-  elif [ $OFFLINE = 0 ]; then
-
-    (
-      echo "supercollider already downloaded..."
-      echo "checking for updates..."
-      cd supercollider
-      git pull
-      git submodule update --init --recursive
-    )
-
-   fi
-
-  if [[ ! -d "libossia" ]]; then
-    echo "now cloning libossia"
-    git clone --recursive https://github.com/OSSIA/libossia
-
-  elif [ $OFFLINE = 0 ]; then
-    (
-      echo "libossia already downloaded..."
-      echo "checking for updates..."
-      cd libossia
-      git pull
-      git submodule update --init --recursive
-    )
-  fi
-  )
-
   # LIBOSSIA BUILD ------------------------------------------------------------------------------
 
   mkdir -p build
@@ -210,10 +169,10 @@
     
     if [ "$DISTRO" = "darwin" ]; then
 
-        cmake ../../repositories/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_ROOT=$BOOST_ROOT
+        cmake ../../submodules/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_ROOT=$BOOST_ROOT
 
    elif [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "elementary" ]; then
-    ../../dependencies/cmake-3.9.3-Linux-x86_64/bin/cmake  ../../repositories/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_INCLUDEDIR=$BOOST_INCLUDE -DBOOST_LIBRARYDIR=$BOOST_LIBS -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DBOOST_ROOT=$BOOST_ROOT -DBoost_NO_SYSTEM_PATHS=ON
+    ../../dependencies/cmake-3.9.3-Linux-x86_64/bin/cmake  ../../submodules/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_INCLUDEDIR=$BOOST_INCLUDE -DBOOST_LIBRARYDIR=$BOOST_LIBS -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DBOOST_ROOT=$BOOST_ROOT -DBoost_NO_SYSTEM_PATHS=ON
     
    fi
    
@@ -229,7 +188,7 @@
   # COPY & OVERWRITES ------------------------------------------------------------------------
   (
 
-  cd repositories/supercollider
+  cd submodules/supercollider
 
   if [ "$1" != "offline" ]; then
       git checkout 3.9
@@ -243,23 +202,23 @@
 
   (
     
-  yes | cp -rf Ossia/Overwrites/root/CMakeLists.txt repositories/supercollider
-  yes | cp -rf Ossia/Overwrites/lang/CMakeLists.txt repositories/supercollider/lang
-  yes | cp -rf Ossia/Overwrites/lang/PyrPrimitive.cpp repositories/supercollider/lang/LangPrimSource
-  yes | cp -rf Ossia/Overwrites/testsuite/CMakeLists.txt repositories/supercollider/testsuite/supernova
-  yes | cp -rf Ossia/Overwrites/server/scsynth/CMakeLists.txt repositories/supercollider/server/scsynth
-  yes | cp -rf Ossia/Overwrites/server/supernova/CMakeLists.txt repositories/supercollider/server/supernova
+  yes | cp -rf Ossia/Overwrites/root/CMakeLists.txt submodules/supercollider
+  yes | cp -rf Ossia/Overwrites/lang/CMakeLists.txt submodules/supercollider/lang
+  yes | cp -rf Ossia/Overwrites/lang/PyrPrimitive.cpp submodules/supercollider/lang/LangPrimSource
+  yes | cp -rf Ossia/Overwrites/testsuite/CMakeLists.txt submodules/supercollider/testsuite/supernova
+  yes | cp -rf Ossia/Overwrites/server/scsynth/CMakeLists.txt submodules/supercollider/server/scsynth
+  yes | cp -rf Ossia/Overwrites/server/supernova/CMakeLists.txt submodules/supercollider/server/supernova
 
-  yes | cp -rf Ossia/Classes/ossia.sc repositories/supercollider/SCClassLibrary/Ossia
-  yes | cp -rf Ossia_light repositories/supercollider/SCClassLibrary
-  yes | cp -rf Ossia/HelpSource/Guides/OssiaReference.schelp repositories/supercollider/HelpSource/Guides
-  yes | cp -rf Ossia/HelpSource/Classes repositories/supercollider/HelpSource/Classes
-  yes | cp -rf Ossia/HelpSource/Help.schelp repositories/supercollider/HelpSource
+  yes | cp -rf Ossia/Classes/ossia.sc submodules/supercollider/SCClassLibrary/Ossia
+  yes | cp -rf Ossia_light submodules/supercollider/SCClassLibrary
+  yes | cp -rf Ossia/HelpSource/Guides/OssiaReference.schelp submodules/supercollider/HelpSource/Guides
+  yes | cp -rf Ossia/HelpSource/Classes submodules/supercollider/HelpSource/Classes
+  yes | cp -rf Ossia/HelpSource/Help.schelp submodules/supercollider/HelpSource
 
   shopt -s dotglob nullglob
-  mv repositories/supercollider/HelpSource/Classes/Classes repositories/supercollider/HelpSource/Classes/Ossia
-  mv repositories/supercollider/HelpSource/Classes/Ossia/* repositories/supercollider/HelpSource/Classes/
-  rm -rf repositories/supercollider/HelpSource/Classes/Ossia
+  mv submodules/supercollider/HelpSource/Classes/Classes submodules/supercollider/HelpSource/Classes/Ossia
+  mv submodules/supercollider/HelpSource/Classes/Ossia/* submodules/supercollider/HelpSource/Classes/
+  rm -rf submodules/supercollider/HelpSource/Classes/Ossia
 
   cd install/libossia/include
   if [[ ! -d "ossia-sc" ]]; then
@@ -273,7 +232,7 @@
 
   # SUPERCOLLIDER BUILD ----------------------------------------------------------------------
   (
-  cd repositories/supercollider
+  cd submodules/supercollider
 
   # remove packaged boost, which gets somehow included even with SYSTEM_BOOST=ON
   rm -rf external_libraries/boost
@@ -283,10 +242,10 @@
   cd build/supercollider
 
   if [ "$DISTRO" = "darwin" ]; then 
-      cmake ../../repositories/supercollider -DCMAKE_PREFIX_PATH=$QT_PATH -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/supercollider -DSYSTEM_BOOST=ON -DBOOST_ROOT=$BOOST_ROOT
+      cmake ../../submodules/supercollider -DCMAKE_PREFIX_PATH=$QT_PATH -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/supercollider -DSYSTEM_BOOST=ON -DBOOST_ROOT=$BOOST_ROOT
 
   elif [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "elementary" ]; then 
-    ../../dependencies/cmake-3.9.3-Linux-x86_64/bin/cmake ../../repositories/supercollider -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DCMAKE_PREFIX_PATH=$QT_PATH -DCMAKE_BUILD_TYPE=Release -DSYSTEM_BOOST=ON -DBOOST_INCLUDEDIR=$BOOST_INCLUDE -DBOOST_LIBRARYDIR=$BOOST_LIBS -DBoost_NO_SYSTEM_PATHS=ON -DBOOST_ROOT=$BOOST_ROOT -DCMAKE_INSTALL_PREFIX=../../install/supercollider
+    ../../dependencies/cmake-3.9.3-Linux-x86_64/bin/cmake ../../submodules/supercollider -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DCMAKE_PREFIX_PATH=$QT_PATH -DCMAKE_BUILD_TYPE=Release -DSYSTEM_BOOST=ON -DBOOST_INCLUDEDIR=$BOOST_INCLUDE -DBOOST_LIBRARYDIR=$BOOST_LIBS -DBoost_NO_SYSTEM_PATHS=ON -DBOOST_ROOT=$BOOST_ROOT -DCMAKE_INSTALL_PREFIX=../../install/supercollider
   fi
 
   make -j8
