@@ -210,7 +210,6 @@
   yes | cp -rf Ossia/Overwrites/server/supernova/CMakeLists.txt submodules/supercollider/server/supernova
 
   yes | cp -rf Ossia/Classes/ossia.sc submodules/supercollider/SCClassLibrary/Ossia
-  yes | cp -rf Ossia_light submodules/supercollider/SCClassLibrary
   yes | cp -rf Ossia/HelpSource/Guides/OssiaReference.schelp submodules/supercollider/HelpSource/Guides
   yes | cp -rf Ossia/HelpSource/Classes submodules/supercollider/HelpSource/Classes
   yes | cp -rf Ossia/HelpSource/Help.schelp submodules/supercollider/HelpSource
