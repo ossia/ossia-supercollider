@@ -96,7 +96,7 @@ code::
 
 subsection::Property binding
 
-This show how, for environments that support it, ossia objects can integrate with existing property environments. In SuperCollider, parameters can easily be integrated with a code::SynthDef:: using the code::.aar::, code::.ar:: and code::.kr:: methods.
+This show how, for environments that support it, ossia objects can integrate with existing property environments. In SuperCollider, parameters can easily be integrated with a code::SynthDef:: using the code::.snapshot::, code::.ar:: and code::.kr:: methods.
 
 code::
 ~freq = OSSIA_Parameter(~some_device, 'freq', Float, [440, 880], 440);
@@ -107,8 +107,8 @@ d = SynthDef('sinosc', {
 	Out.ar(0, SinOsc.ar(~freq.kr, 0, 0.25));
 }).add;
 
-// the aar convenience method returns an array with parameter's name and current value
-x = Synth('sinosc', ~freq.aar);
+// the snapshot convenience method returns an array with children parameter's name and current values
+x = Synth('sinosc', ~some_device.snapshot);
 
 // changing the value of the parameter will automatically update the synth argument's value
 ~freq.value = 660;

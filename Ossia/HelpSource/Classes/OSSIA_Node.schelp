@@ -26,6 +26,9 @@ INSTANCEMETHODS::
 METHOD:: name
 gets the node's identifier on the network.
 
+METHOD:: snapshot
+returns:: an array with children parameters' name as symbols and their values, convenient for code::Synth:: creation.
+
 METHOD:: description
 An optional textual description.
 
