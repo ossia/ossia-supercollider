@@ -4,7 +4,7 @@
 #include "VMGlobals.h"
 #include <ossia/ossia.hpp>
 #include <ossia/network/base/parameter_data.hpp>
-#include <ossia/editor/dataspace/dataspace.hpp>
+#include <ossia/network/dataspace/dataspace.hpp>
 #include <vector>
 #include <iostream>
 #include <exception>
