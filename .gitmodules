@@ -1,0 +1,3 @@
+[submodule "repositories/libossia"]
+	path = repositories/libossia
+	url = https://github.com/OSSIA/libossia.git

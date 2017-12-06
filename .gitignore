@@ -1,5 +1,4 @@
 # folders to exclude
-repositories/
 dependencies/
 build/
 install/
