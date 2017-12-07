@@ -153,15 +153,15 @@ OSSIA_Node {
 	}
 
 	snapshot {
-		var flat = this.explore(false).flatten;
-		var sym = flat.do({|item,i|
+		var flat = this.explore(false, true).flatten;
+		var arr = flat.do({|item,i|
 			if((i%2==0) && (item.isKindOf(String))) { flat[i] = item.asSymbol }
 		});
 
-		^sym
+		^arr
 	}
 
-	explore { |with_attributes = true|
+	explore { |with_attributes = true, parameters_only = false|
 		_OSSIA_NodeExplore
 		^this.primitiveFailed
 	}

@@ -680,29 +680,34 @@ int pyr_node_get_children_names(vmglobals *g, int n)
     return errNone;
 }
 
-void make_node_sheet
-(net::node_base& node, std::vector<ossia::value>& destination, bool with_attributes = false)
-{
-    std::vector<ossia::value> sheet;
-    auto name = node.get_name();
-    std::string separator("_");
-    std::stringstream stream;
-    std::string unique_name;
-    stream << &node;
+void make_node_sheet(net::node_base& node, std::vector<ossia::value>& destination,
+                     bool with_attributes = false, bool parameters_only = false)
+{        
+    std::vector<ossia::value>  sheet;
+    auto parameter = node.get_parameter();
 
-    unique_name = name + separator + stream.str();
-    sheet.push_back(unique_name);
-
-    if(auto parameter = node.get_parameter())
+    if  ((parameters_only && parameter) || !parameters_only)
     {
-        sheet.push_back(parameter->fetch_value());
+        std::string                     separator("_");
+        std::stringstream               stream;
+        std::string                     unique_name;
+
+        stream << &node;
+
+        auto name       = node.get_name();
+        unique_name     = name + separator + stream.str();
+        sheet           .push_back(unique_name);
     }
 
-    if(with_attributes)
+    if  (parameter)
+        sheet.push_back(parameter->value());
+
+    if( with_attributes )
     {
-        auto type = net::get_value_type(node).value_or(ossia::val_type::NONE);
-        auto amode = net::get_access_mode(node);
-        auto bmode = net::get_bounding_mode(node);
+        auto type   = net::get_value_type(node).value_or(ossia::val_type::NONE);
+        auto amode  = net::get_access_mode(node);
+        auto bmode  = net::get_bounding_mode(node);
+
         sheet.push_back(format_listed_attribute<ossia::val_type>(type, g_typemap));
         sheet.push_back(format_listed_attribute<access_mode>(*amode, g_accessmap));
         sheet.push_back(format_listed_attribute<bounding_mode>(*bmode, g_bmodemap));
@@ -715,19 +720,20 @@ void make_node_sheet
     destination.push_back(sheet);
 }
 
-void explore(net::node_base& node, std::vector<ossia::value>& tree, bool with_attributes = false)
+void explore(net::node_base& node, std::vector<ossia::value>& tree,
+             bool with_attributes = false, bool parameters_only = false)
 {
     for (const auto& child : node.children_copy())
     {
-        make_node_sheet(*child, tree, with_attributes);
-        explore(*child, tree);
+        make_node_sheet(*child, tree, with_attributes, parameters_only);
+        explore(*child, tree, with_attributes, parameters_only);
     }
 }
 
 int pyr_node_get_sheet(vmglobals *g, int n)
 {
     std::vector<ossia::value> sheet;
-    make_node_sheet(*sc::get_node(g->sp), sheet, true);
+    make_node_sheet(*sc::get_node(g->sp), sheet, true, false);
 
     sc::write_value(g, g->sp, sheet);
     return errNone;
@@ -736,11 +742,11 @@ int pyr_node_get_sheet(vmglobals *g, int n)
 int pyr_node_explore(vmglobals *g, int n)
 {
     // also used to make synth argument arrays
-    auto node = sc::get_node(g->sp-1);
+    auto node = sc::get_node(g->sp-2);
     std::vector<ossia::value> tree;
-    explore(*node, tree, IsTrue(g->sp));
+    explore(*node, tree, IsTrue(g->sp-1), IsTrue(g->sp));
 
-    sc::write_value(g, g->sp-1, tree);
+    sc::write_value(g, g->sp-2, tree);
 
     return errNone;
 }
@@ -1056,7 +1062,7 @@ void initOssiaPrimitives() {
     definePrimitive(base, index++, "_OSSIA_InstantiateParameter", pyr_instantiate_parameter, 9, 0);
     definePrimitive(base, index++, "_OSSIA_InstantiateNode", pyr_instantiate_node, 3, 0);
 
-    definePrimitive(base, index++, "_OSSIA_NodeExplore", pyr_node_explore, 2, 0);
+    definePrimitive(base, index++, "_OSSIA_NodeExplore", pyr_node_explore, 3, 0);
     definePrimitive(base, index++, "_OSSIA_NodeGetName", pyr_node_get_name, 1, 0);
     definePrimitive(base, index++, "_OSSIA_NodeGetChildrenNames", pyr_node_get_children_names, 1, 0);
     definePrimitive(base, index++, "_OSSIA_NodeGetFullPath", pyr_node_get_full_path, 1, 0);
