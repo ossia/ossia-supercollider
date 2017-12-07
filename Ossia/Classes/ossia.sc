@@ -152,11 +152,19 @@ OSSIA_Node {
 		^this.primitiveFailed
 	}
 
-	snapshot {
+	snapshot { |... exclude|
 		var flat = this.explore(false, true).flatten;
 		var arr = flat.do({|item,i|
 			if((i%2==0) && (item.isKindOf(String))) { flat[i] = item.asSymbol }
 		});
+
+		if(exclude.notEmpty)
+		{
+			exclude.do({|item|
+				var index = arr.indexOf(item.sym);
+				2.do({ arr.removeAt(index) });
+			});
+		};
 
 		^arr
 	}
