@@ -21,7 +21,7 @@ if you have boost 1.65 already installed on your system:
 
 otherwise:
 - just run `./build.sh` this will install the required boost 1.65 libraries manually and locally (this may take quite a while)
-- local install folder with sc binaries will be located in `install/supercollider/bin` (you might want to add them in your $PATH)
+- local install folder with sc binaries will be located in your system paths (note: this overrides your previously installed binaries if you had any)
 
 builds on linux are not as thoroughly tested as on macOS, please report any problem with the building process in the Issues section.
 
