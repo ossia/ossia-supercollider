@@ -106,10 +106,10 @@
         cd dependencies
         
         # cmake
-        if [[ ! -d "cmake-3.9.3-Linux-x86_64" ]]; then
-    	    wget https://cmake.org/files/v3.9/cmake-3.9.3-Linux-x86_64.tar.gz
-    	    tar xaf cmake-3.9.3-Linux-x86_64.tar.gz
-  	        rm -rf cmake-3.9.3-Linux-x86_64.tar.gz
+        if [[ ! -d "cmake-3.10.0-Linux-x86_64" ]]; then
+    	    wget https://cmake.org/files/v3.10/cmake-3.10.0-Linux-x86_64.tar.gz
+    	    tar xaf cmake-3.10.0-Linux-x86_64.tar.gz
+  	        rm -rf cmake-3.10.0-Linux-x86_64.tar.gz
         fi
 
         # download and install boost
@@ -162,17 +162,13 @@
 
     # CMake and build libossia
     echo "now building libossia..."
-
-    echo "$BOOST_ROOT"
-    echo "$BOOST_INCLUDE"
-    echo "$BOOST_LIBS"
     
     if [ "$DISTRO" = "darwin" ]; then
 
         cmake ../../submodules/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_ROOT=$BOOST_ROOT -DOSSIA_EDITOR=ON
 
    elif [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "elementary" ]; then
-    ../../dependencies/cmake-3.9.3-Linux-x86_64/bin/cmake  ../../submodules/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_INCLUDEDIR=$BOOST_INCLUDE -DBOOST_LIBRARYDIR=$BOOST_LIBS -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DBOOST_ROOT=$BOOST_ROOT -DBoost_NO_SYSTEM_PATHS=ON
+    ../../dependencies/cmake-3.10.0-Linux-x86_64/bin/cmake  ../../submodules/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_INCLUDEDIR=$BOOST_INCLUDE -DBOOST_LIBRARYDIR=$BOOST_LIBS -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DBOOST_ROOT=$BOOST_ROOT -DBoost_NO_SYSTEM_PATHS=ON
     
    fi
    
@@ -243,8 +239,8 @@
   if [ "$DISTRO" = "darwin" ]; then 
       cmake ../../submodules/supercollider -DCMAKE_PREFIX_PATH=$QT_PATH -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/supercollider -DSYSTEM_BOOST=ON -DBOOST_ROOT=$BOOST_ROOT
 
-  elif [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "elementary" ]; then 
-    ../../dependencies/cmake-3.9.3-Linux-x86_64/bin/cmake ../../submodules/supercollider -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DCMAKE_PREFIX_PATH=$QT_PATH -DCMAKE_BUILD_TYPE=Release -DSYSTEM_BOOST=ON -DBOOST_INCLUDEDIR=$BOOST_INCLUDE -DBOOST_LIBRARYDIR=$BOOST_LIBS -DBoost_NO_SYSTEM_PATHS=ON -DBOOST_ROOT=$BOOST_ROOT
+  elif [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "elementary" ]; then
+    ../../dependencies/cmake-3.10.0-Linux-x86_64/bin/cmake ../../submodules/supercollider -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DCMAKE_BUILD_TYPE=Release -DSYSTEM_BOOST=ON -DBOOST_INCLUDEDIR=$BOOST_INCLUDE -DBOOST_LIBRARYDIR=$BOOST_LIBS -DBOOST_ROOT=$BOOST_ROOT -DBoost_DEBUG=OFF
   fi
 
   make -j8
