@@ -19,12 +19,12 @@ s.waitForBoot({
 		~cutoff = OSSIA_Parameter.array(n, ~device, "/synth.%/cutoff/frequency",
 			Float, [20, 20000], 20000, 'clip');
 
-		~master = OSSIA_Parameter(~device, '/master/gain', Float, [-100, 12], 0.2);
+		~master = OSSIA_Parameter(~device, '/master/gain', Float, [-100, 12], -6);
 // --------------------------------------------------------------------------------------------------------
 		// start/stop parameters
 		~start = OSSIA_Parameter(~device, 'start', Impulse)
 		// make a snapshot of ~device excluding ~start and ~stop parameters
-		.callback = { Synth('fmdef', ~device.snapshot(~start, ~stop) };
+		.callback = { Synth('fmdef', ~device.snapshot(~start, ~stop)) };
 
 		~stop = OSSIA_Parameter(~device, 'stop', Impulse)
 		.callback = { s.freeAll };
@@ -40,9 +40,12 @@ s.waitForBoot({
 							~cutoff[i].kr),
 						~pan[i].kr);
 			}));
-				Out.ar(0, fm * ~master.kr.dbamp);
+			var master = fm * ~master.kr.dbamp;
+			Out.ar(0, FreeVerb2.ar(master[0], master[1]));
 		}).add;
 	});
 });
 // --------------------------------------------------------------------------------------------------------
 )
+
+~carfreq[0].v = 60.midicps;
