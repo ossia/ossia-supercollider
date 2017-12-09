@@ -5,6 +5,11 @@ s.boot;
 n = 4;
 // --------------------------------------------------------------------------------------------------------
 s.waitForBoot({
+
+	b = Buffer.alloc(s, 512, 1, { |buf|
+		buf.chebyMsg([0.25, 0.5, 0.25]);
+	});
+
 // --------------------------------------------------------------------------------------------------------
 	~device = OSSIA_Device("fmcollider").exposeOSCQueryServer(1234, 5678, {
 // --------------------------------------------------------------------------------------------------------
@@ -40,8 +45,12 @@ s.waitForBoot({
 							~cutoff[i].kr),
 						~pan[i].kr);
 			}));
-			var master = fm * ~master.kr.dbamp;
-			Out.ar(0, FreeVerb2.ar(master[0], master[1]));
+
+			var dist = Mix.ar([Shaper.ar(b, HPF.ar(fm, 1000), 0.3), fm]);
+			var comp = Compander.ar(dist, dist, -30.dbamp, 1, 1/3, mul: 18.dbamp);
+			var shelf = BHiShelf.ar(comp, 5000, 1, 6);
+			var master = shelf * ~master.kr.dbamp;
+			Out.ar(0, FreeVerb2.ar(master[0], master[1], 0.5));
 		}).add;
 	});
 });
