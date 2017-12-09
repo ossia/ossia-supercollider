@@ -11,18 +11,16 @@ s.waitForBoot({
 	});
 
 // --------------------------------------------------------------------------------------------------------
-	~device = OSSIA_Device("fmcollider").exposeOSCQueryServer(1234, 5678, {
+	~device = OSSIA_Device("fmsynth").exposeOSCQueryServer(1234, 5678, {
 // --------------------------------------------------------------------------------------------------------
 		// define array of parameters in device tree-structure
-		~carfreq = OSSIA_Parameter.array(n, ~device, "/synth.%/carfreq", Float, [0, 20000], 220, 'clip');
+		~carfreq = OSSIA_Parameter.array(n, ~device, "/synth.%/carrier/frequency", Float, [0, 20000], 220, 'clip');
 		~modratio = OSSIA_Parameter.array(n, ~device, "/synth.%/modulation/ratio",
 			Float, [0.01, 10], 2, 'clip');
 		~modindex = OSSIA_Parameter.array(n, ~device, "/synth.%/modulation/index", Float,
 			[0.01, 1000], 100, 'clip');
 		~gain = OSSIA_Parameter.array(n, ~device, "/synth.%/gain", Float, [-100, 12], 0, 'clip');
 		~pan = OSSIA_Parameter.array(n, ~device, "/synth.%/pan", Float, [-1, 1], 0, 'clip');
-		~cutoff = OSSIA_Parameter.array(n, ~device, "/synth.%/cutoff/frequency",
-			Float, [20, 20000], 20000, 'clip');
 
 		~master = OSSIA_Parameter(~device, '/master/gain', Float, [-100, 12], -6);
 // --------------------------------------------------------------------------------------------------------
@@ -38,11 +36,9 @@ s.waitForBoot({
 			var fm = Mix.new(
 				Array.fill(n, { |i|
 					Pan2.ar(
-						LPF.ar(
 							SinOsc.ar(~carfreq[i].kr +
 								SinOsc.ar(~carfreq[i].kr * ~modratio[i].kr, 0, ~modindex[i].kr),
 								0, ~gain[i].kr.dbamp),
-							~cutoff[i].kr),
 						~pan[i].kr);
 			}));
 
@@ -50,7 +46,7 @@ s.waitForBoot({
 			var comp = Compander.ar(dist, dist, -30.dbamp, 1, 1/3, mul: 18.dbamp);
 			var shelf = BHiShelf.ar(comp, 5000, 1, 6);
 			var master = shelf * ~master.kr.dbamp;
-			Out.ar(0, FreeVerb2.ar(master[0], master[1], 0.5));
+			Out.ar(0, FreeVerb2.ar(master[0], master[1], 0.3));
 		}).add;
 	});
 });
