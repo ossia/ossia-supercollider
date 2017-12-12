@@ -25,7 +25,10 @@ otherwise:
 
 builds on linux are not as thoroughly tested as on macOS, please report any problem with the building process in the Issues section.
 
-### Documentation
+### Windows
+not yet tested, we welcome any help!
+
+## Documentation
 the install provides a guide in the SuperCollider HelpSource's home (the one displayed at startup in the sc-ide)
 it is also available here: https://ossia.github.io/?javascript#introduction
 
