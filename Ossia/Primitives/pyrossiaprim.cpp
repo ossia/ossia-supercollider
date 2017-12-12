@@ -405,10 +405,13 @@ int pyr_expose_oscquery_mirror(vmglobals *g, int n)
     auto mirror_proto_ptr = std::make_unique<oscquery_mirror_protocol>
                            (sc::read_string(pyr_host));
 
+    auto mirror         = mirror_proto_ptr.get();
+
     auto target_device  = dynamic_cast<net::generic_device*>(sc::get_node(rcvr));
     auto multiplex      = dynamic_cast<net::multiplex_protocol*>(&target_device->get_protocol());
+
     multiplex           ->expose_to(std::move(mirror_proto_ptr));
-    mirror_proto_ptr    ->update(*target_device);
+    mirror              ->update(*target_device);
 
     return errNone;
 }

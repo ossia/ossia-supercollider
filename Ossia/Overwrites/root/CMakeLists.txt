@@ -274,6 +274,16 @@ endif()
 
 #############################################
 # some preprocessor flags
+
+if(CMAKE_COMPILER_IS_GNUCXX)
+    message("Compiling with gnu-cxx")
+endif()
+
+if(CMAKE_COMPILER_IS_INTEL)
+    message("intel compiler")
+endif()
+
+
 if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
 	if (SSE)
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}   -msse")
@@ -301,7 +311,6 @@ if (CMAKE_COMPILER_IS_GNUCXX OR CMAKE_COMPILER_IS_CLANG)
         endif()
     else()
         set(CMAKE_CXX_STANDARD 14)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
         set(CMAKE_CXX_LINK_FLAGS "${CMAKE_CXX_LINK_FLAGS} -std=c++14")
 
         if(CMAKE_COMPILER_IS_CLANG)
