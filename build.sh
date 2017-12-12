@@ -154,6 +154,9 @@
 
   # LIBOSSIA BUILD ------------------------------------------------------------------------------
 
+  # temporary fix for ossia cxx_standard
+  yes | cp -rf Ossia/Overwrites/ossia/OssiaConfiguration.cmake submodules/libossia/CMake
+
   mkdir -p build
   mkdir -p build/libossia
   mkdir -p install
@@ -209,6 +212,7 @@
   yes | cp -rf Ossia/HelpSource/Guides/OssiaReference.schelp submodules/supercollider/HelpSource/Guides
   yes | cp -rf Ossia/HelpSource/Classes submodules/supercollider/HelpSource/Classes
   yes | cp -rf Ossia/HelpSource/Help.schelp submodules/supercollider/HelpSource
+
 
   shopt -s dotglob nullglob
   mv submodules/supercollider/HelpSource/Classes/Classes submodules/supercollider/HelpSource/Classes/Ossia
