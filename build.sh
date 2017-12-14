@@ -53,7 +53,7 @@
 
     # CHECK HOMEBREW DEPENDENCIE
     
-    if [ OFFLINE = 0 ]; then
+    if [ $OFFLINE = 0 ]; then
 
       # QT 5.5 (required for supercollider's webkit
       if brew ls --versions qt@5.5 > /dev/null; then
