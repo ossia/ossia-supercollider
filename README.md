@@ -2,7 +2,7 @@
 
 ## Installing
 
-### macOS
+### macOS (tested on Sierra & High Sierra)
 
 - recursive-clone this repository (`git clone --recursive https://github.com/OSSIA/ossia-supercollider.git`), cd into it
 - make sure homebrew is installed, otherwise run `/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"`
@@ -11,7 +11,7 @@
 
 the script clones a fresh version of supercollider (as of this day, version 3.9dev - you may change to sc3.8 branch on macOS, but it doesn't work on Linux), adds and builds the libossia dependencies for sclang. Depending on your connection, the install process may take a little while, because of the complete download and build of the two libs/applications.
 
-### Linux (tested on debian-like systems, unstable on archlinux for now)
+### Linux (tested on debian-like systems)
 
 - recursive-clone this repository (`git clone --recursive https://github.com/OSSIA/ossia-supercollider.git`), cd into it
 
@@ -26,7 +26,7 @@ otherwise:
 builds on linux are not as thoroughly tested as on macOS, please report any problem with the building process in the Issues section.
 
 ### Windows
-not yet tested, we welcome any help!
+not yet supported, we welcome any help!
 
 ## Documentation
 the install provides a guide in the SuperCollider HelpSource's home (the one displayed at startup in the sc-ide)
