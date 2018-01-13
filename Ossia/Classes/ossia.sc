@@ -32,6 +32,12 @@ OSSIA {
 			default_value, bounding_mode, critical, repetition_filter);
 	}
 
+	*parameter_array { |size, parent_node, name, type, domain, default_value,
+		bounding_mode = 'free', critical = false, repetition_filter = false|
+		^OSSIA_Parameter.array(size, parent_node, name, type, domain, default_value,
+			bounding_mode, critical, repetition_filter);
+	}
+
 	*node { |parent_node, name|
 		^OSSIA_Node(parent_node, name)
 	}
