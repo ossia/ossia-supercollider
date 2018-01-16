@@ -284,6 +284,15 @@ OSSIA_Device : OSSIA_Node {
 		ShutDown.add({this.ossia_dtor});
 	}
 
+	*explore {
+		_OSSIA_ZeroConfExplore
+		^this.primitiveFailed
+	}
+
+	*format_ws { |zconf_array|
+		^format("ws://%:%", zconf_array[1], zconf_array[2]);
+	}
+
 	*new {|name|
 
 		g_devices.do({|dev|
@@ -368,6 +377,10 @@ OSSIA_Device : OSSIA_Node {
 
 	exposeOSC { |remote_ip, remote_port, local_port, callback|
 		this.forkExpose('osc', [remote_ip, remote_port, local_port], callback);
+	}
+
+	get { |addr|
+		^OSSIA_MirrorParameter(this, addr)
 	}
 
 	//-------------------------------------------//

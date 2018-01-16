@@ -11,6 +11,7 @@
 #include <ossia/network/domain/domain_functions.hpp>
 #include <ossia/network/oscquery/oscquery_server.hpp>
 #include <ossia/network/oscquery/oscquery_mirror.hpp>
+#include <ossia/network/zeroconf/zeroconf.hpp>
 #include <ossia-sc/pyrossiaprim.h>
 #include <ossia/preset/preset.hpp>
 #include <ossia/preset/exception.hpp>
@@ -65,12 +66,11 @@ const char* ossia::sc::ex_arg_val::what() const throw()
     return "Bad value for argument. ";
 }
 
-bool ossia::sc::check_argument_definition(pyrslot *s)
+inline bool ossia::sc::check_argument_definition(pyrslot *s)
 {
     if          (IsNil(s))
     throw       ARG_UNDEFINED;
     else        return true;
-    return      false;
 }
 
 bool ossia::sc::check_argument_type(pyrslot *s, std::initializer_list<std::string> targets)
@@ -101,7 +101,7 @@ int ossia::sc::check_argument_reference
     return      -1;
 }
 
-void ossia::sc::register_sc_node(pyrslot *s, net::node_base *node) noexcept
+inline void ossia::sc::register_sc_node(pyrslot *s, net::node_base *node) noexcept
 {
     pyrslot *ptr_var = slotRawObject(s)->slots;
     SetPtr  (ptr_var, node);
@@ -313,14 +313,14 @@ const T& values, void (*writer_func)(vmglobals*, pyrslot*, const F&)) noexcept
     }
 }
 
-void ossia::sc::write_string(vmglobals *g, pyrslot *target, const std::string& string) noexcept
+inline void ossia::sc::write_string(vmglobals *g, pyrslot *target, const std::string& string) noexcept
 {
     PyrString*  str = newPyrString(g->gc, string.c_str(), 0, true);
     SetObject   (target, str);
 }
 
 void ossia::sc::write_value(vmglobals *g, pyrslot *target, const ossia::value& value) noexcept
-{    
+{
     ossia::val_type vtype;
     if(value.valid()) vtype = value.getType();
     else vtype = ossia::val_type::NONE;
@@ -339,6 +339,25 @@ void ossia::sc::write_value(vmglobals *g, pyrslot *target, const ossia::value& v
     case ossia::val_type::VEC3F:    sc::write_array<vec3f,ossia::value>(g, target, value.get<vec3f>(), sc::write_value); break;
     case ossia::val_type::VEC4F:    sc::write_array<vec4f,ossia::value>(g, target, value.get<vec4f>(), sc::write_value); break;
     }
+}
+
+int pyr_zeroconf_explore(vmglobals *g, int n)
+{
+    auto list = ossia::net::list_oscquery_devices();
+    std::vector<ossia::value> res;
+
+    for(auto& device : list)
+    {
+        std::vector<ossia::value> devaslist;
+        devaslist.push_back((ossia::value) device.name);
+        devaslist.push_back((ossia::value) device.host);
+        devaslist.push_back((ossia::value) device.port);
+        res.push_back(devaslist);
+    }
+
+    sc::write_value(g, g->sp, res);
+
+    return errNone;
 }
 
 int pyr_instantiate_device(vmglobals *g, int n)
@@ -377,7 +396,7 @@ int pyr_expose_oscquery_server(vmglobals *g, int n)
     {
         ERROTP      (e, ERR_HDR, "WS Port argument.");
         return      errFailed;
-    }       
+    }
 
     auto oscq_protocol = std::make_unique<oscquery_server_protocol>
                          (sc::read_int(pr_osc_port), sc::read_int(pr_ws_port));
@@ -442,7 +461,7 @@ int pyr_expose_minuit(vmglobals *g, int n)
     {
         ERROTP      (e, ERR_HDR, "Local OSCPort argument.");
         return      errFailed;
-    }    
+    }
 
     auto target_device = dynamic_cast<net::generic_device*>(sc::get_node(rcvr));
     auto device_name = target_device->get_name();
@@ -519,7 +538,7 @@ int pyr_device_remove_logger(vmglobals *g, int n)
 }
 
 int pyr_instantiate_node(vmglobals *g, int n)
-{        
+{
     pyrslot  *rcvr       = g->sp-2,
              *pr_parent  = g->sp-1,
              *pr_name    = g->sp;
@@ -528,7 +547,7 @@ int pyr_instantiate_node(vmglobals *g, int n)
 
     try     { parent_node = ossia::sc::get_node(pr_parent); }
     catch   ( const ossia::sc::ex_arg_type &e)
-    {        
+    {
         ERROTP      (e, ERR_HDR, "Parent Argument. Aborting...");
         return      errFailed;
     }
@@ -552,7 +571,7 @@ int pyr_instantiate_node(vmglobals *g, int n)
 }
 
 int pyr_instantiate_parameter(vmglobals *g, int n)
-{    
+{
     pyrslot
     *pr_repetition_filter   =   g->sp,
     *pr_critical            =   g->sp-1,
@@ -598,7 +617,7 @@ int pyr_instantiate_parameter(vmglobals *g, int n)
     // TYPE  ------------------------------------------------
     try     { type = sc::read_type(pr_type); }
     catch   ( const std::exception &e )
-    {        
+    {
         try     { type = sc::read_type(pr_default_value); }
         catch   ( const std::exception &exc )
         {
@@ -685,7 +704,7 @@ int pyr_node_get_children_names(vmglobals *g, int n)
 
 void make_node_sheet(net::node_base& node, std::vector<ossia::value>& destination,
                      bool with_attributes = false, bool parameters_only = false)
-{        
+{
     std::vector<ossia::value>  sheet;
     auto parameter = node.get_parameter();
 
@@ -1061,6 +1080,8 @@ void initOssiaPrimitives() {
     definePrimitive(base, index++, "_OSSIA_ExposeOSCQueryMirror", pyr_expose_oscquery_mirror, 2, 0);
     definePrimitive(base, index++, "_OSSIA_ExposeMinuit", pyr_expose_minuit, 4, 0);
     definePrimitive(base, index++, "_OSSIA_ExposeOSC", pyr_expose_osc, 4, 0);
+
+    definePrimitive(base, index++, "_OSSIA_ZeroConfExplore", pyr_zeroconf_explore, 1, 0);
 
     definePrimitive(base, index++, "_OSSIA_InstantiateParameter", pyr_instantiate_parameter, 9, 0);
     definePrimitive(base, index++, "_OSSIA_InstantiateNode", pyr_instantiate_node, 3, 0);

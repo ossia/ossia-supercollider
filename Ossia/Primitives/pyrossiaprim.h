@@ -20,6 +20,7 @@ namespace ossia
 {
 namespace sc
 {
+
 typedef boost::bimap
 <std::string, boost::bimaps::multiset_of<ossia::val_type>>  bmap_t;
 
