@@ -284,13 +284,18 @@ OSSIA_Device : OSSIA_Node {
 		ShutDown.add({this.ossia_dtor});
 	}
 
-	*explore {
+	*net_explore {
 		_OSSIA_ZeroConfExplore
 		^this.primitiveFailed
 	}
 
 	*format_ws { |zconf_array|
 		^format("ws://%:%", zconf_array[1], zconf_array[2]);
+	}
+
+	*newFromZeroConf { |name, zconf_target_array, callback|
+		^OSSIA_Device(name).exposeOSCQueryMirror(
+			OSSIA_Device.format_ws(zconf_target_array), callback);
 	}
 
 	*new {|name|
