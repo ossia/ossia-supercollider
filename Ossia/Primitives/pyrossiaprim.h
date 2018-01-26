@@ -21,14 +21,7 @@ namespace ossia
 namespace sc
 {
 
-typedef boost::bimap
-<std::string, boost::bimaps::multiset_of<ossia::val_type>>  bmap_t;
-
-typedef boost::bimap
-<std::string, boost::bimaps::multiset_of<ossia::access_mode>> bmap_a;
-
-typedef boost::bimap
-<std::string, boost::bimaps::multiset_of<ossia::bounding_mode>> bmap_b;
+template<typename T> using bmap = boost::bimap<std::string,boost::bimaps::multiset_of<T>>;
 /**         boost bimap associating ossia enum types
  *          with valid sc string/symbol values
  */
@@ -50,7 +43,7 @@ class ex_arg_type :     public std::exception {
 public:                 virtual const char* what() const throw() final; };
 /**                     exception: in case slot-argument's type doesn't match
  */
-bool                    check_argument_type(pyrslot* s, std::initializer_list<std::string> targets);
+std::string             check_argument_type(pyrslot* s, std::initializer_list<std::string> targets);
 /**                     returns true if one of the targets matches the slot's classtype,
  *                      returns false and throws error otherwise
  */
@@ -67,7 +60,7 @@ template<class T> int   check_argument_reference
 void                    register_sc_node(pyrslot *s, net::node_base *node) noexcept;
 /**                     saves the node on the stack
  */
-net::node_base*         get_node(pyrslot *s);
+net::node_base*         get_node(pyrslot *s) noexcept;
 /**                     returns slot's matching ossia::node
  */
 template<class T>

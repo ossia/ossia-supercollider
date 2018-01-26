@@ -31,9 +31,9 @@ ex_arg_val      ARG_BAD_VALUE;
 ex_arg_undef    ARG_UNDEFINED;
 ex_arg_type     ARG_WRONG_TYPE;
 
-bmap_t g_typemap;
-bmap_a g_accessmap;
-bmap_b g_bmodemap;
+bmap<ossia::val_type>       g_typemap;
+bmap<ossia::bounding_mode>  g_bmodemap;
+bmap<ossia::access_mode>    g_accessmap;
 
 #define SCCBACK_NAME "pvOnCallback"
 #define HDR "OSSIA: "
@@ -73,7 +73,7 @@ inline bool ossia::sc::check_argument_definition(pyrslot *s)
     else        return true;
 }
 
-bool ossia::sc::check_argument_type(pyrslot *s, std::initializer_list<std::string> targets)
+std::string ossia::sc::check_argument_type(pyrslot *s, std::initializer_list<std::string> targets)
 {
     try     { check_argument_definition(s); }
     catch   ( const std::exception &e) { throw; }
@@ -82,11 +82,10 @@ bool ossia::sc::check_argument_type(pyrslot *s, std::initializer_list<std::strin
     for     (const auto& target : targets)
     {
         if  (target == classname)
-            return true;
+            return classname;
     }
 
     throw       ARG_WRONG_TYPE;
-    return      false;
 }
 
 template<class T>
@@ -107,13 +106,8 @@ inline void ossia::sc::register_sc_node(pyrslot *s, net::node_base *node) noexce
     SetPtr  (ptr_var, node);
 }
 
-ossia::net::node_base* ossia::sc::get_node(pyrslot *s)
+inline ossia::net::node_base* ossia::sc::get_node(pyrslot *s) noexcept
 {
-    try { check_argument_type(s, { "OSSIA_Parameter", "OSSIA_Node",
-                                   "OSSIA_MirrorParameter", "OSSIA_MirrorNode",
-                                   "OSSIA_Device" }); }
-
-    catch( const std::exception &e ) { throw; }
     return (net::node_base*) slotRawPtr(&slotRawObject(s)->slots[0]);
 }
 
@@ -141,43 +135,56 @@ std::string ossia::sc::read_classname(pyrslot* s) noexcept
 }
 
 std::string ossia::sc::read_string(pyrslot *s)
-{
-    try     { check_argument_type(s, { "String", "Symbol" }); }
-    catch   ( const std::exception& e) { throw; }
-
-    if      ( read_classname(s) == "Symbol" )
-            return (std::string) slotSymString(s);
-    else
+{    
+    try
     {
-        char v      [ADRMAXLEN];
-        slotStrVal  (s, v, ADRMAXLEN);
-        return      (std::string) v;
+        auto type = check_argument_type(s, { "String", "Symbol" });
+
+        if          (type == "Symbol")
+        return      (std::string) slotSymString(s);
+        else
+        {
+            char v      [ADRMAXLEN];
+            slotStrVal  (s, v, ADRMAXLEN);
+            return      (std::string) v;
+        }
+
     }
+
+    catch (const std::exception& e) { throw; }
+
 }
 
 char ossia::sc::read_char(pyrslot *s)
 {
-    try     { check_argument_type(s, { "Char", "Symbol" }); }
-    catch   ( const std::exception& e) { throw; }
+    try
+    {
+        auto type = check_argument_type(s, { "Char", "Symbol" });
 
-    if      ( read_classname(s) == "Symbol" )
-            return *slotSymString(s);
-    else    return s->u.c;
+        if          (type == "Symbol")
+        return      *slotSymString(s);
+        else return  s->u.c;
+    }
+    catch   ( const std::exception& e) { throw; }
 }
 
 float ossia::sc::read_float(pyrslot *s)
 {
-    try { check_argument_type(s, { "Float", "Integer" }); }
-    catch(const std::exception& e) { throw; }
-
-    if(sc::read_classname(s) == "Float")
+    try
     {
-        float           f;
-        slotFloatVal    (s, &f);
-        return          f;
+        auto type = check_argument_type(s, { "Float", "Integer" });
+        if(type == "Float")
+        {
+            float           f;
+            slotFloatVal    (s, &f);
+            return          f;
+        }
+
+        return (float) sc::read_int(s);
+
     }
 
-    return (float) sc::read_int(s);
+    catch(const std::exception& e) { throw; }
 }
 
 int ossia::sc::read_int(pyrslot *s)
@@ -204,12 +211,12 @@ ossia::val_type ossia::sc::read_type(pyrslot *s)
 
 ossia::domain ossia::sc::read_domain(pyrslot *s, ossia::val_type t)
 {
-    try { check_argument_type(s, { "Array", "List", "OSSIA_domain"}); }
-    catch(const std::exception& e) { throw; }
-
     pyrslot*        target;
-    auto            classname   = read_classname(s);
+    std::string     classname;
     ossia::domain   domain;
+
+    try     { classname = check_argument_type(s, { "Array", "List", "OSSIA_domain"}); }
+    catch   (const std::exception& e) { throw; }
 
     if  (classname == "List" || classname ==  "Array")
     {
@@ -342,7 +349,7 @@ void ossia::sc::write_value(vmglobals *g, pyrslot *target, const ossia::value& v
 }
 
 int pyr_zeroconf_explore(vmglobals *g, int n)
-{
+{  
     auto list = ossia::net::list_oscquery_devices();
     std::vector<ossia::value> res;
 
@@ -1129,36 +1136,36 @@ void initOssiaPrimitives() {
 
     definePrimitive(base, index++, "_OSSIA_FreeDevice", pyr_free_device, 1, 0);
 
-    g_typemap.insert( bmap_t::value_type("Integer", val_type::INT));
-    g_typemap.insert( bmap_t::value_type("Boolean", val_type::BOOL));
-    g_typemap.insert( bmap_t::value_type("True", val_type::BOOL));
-    g_typemap.insert( bmap_t::value_type("False", val_type::BOOL));
-    g_typemap.insert( bmap_t::value_type("Char", val_type::CHAR));
-    g_typemap.insert( bmap_t::value_type("Float", val_type::FLOAT));
-    g_typemap.insert( bmap_t::value_type("OSSIA_vec2f", val_type::VEC2F));
-    g_typemap.insert( bmap_t::value_type("OSSIA_vec3f", val_type::VEC3F));
-    g_typemap.insert( bmap_t::value_type("OSSIA_vec4f", val_type::VEC4F));
-    g_typemap.insert( bmap_t::value_type("Array", val_type::LIST));
-    g_typemap.insert( bmap_t::value_type("List", val_type::LIST));
-    g_typemap.insert( bmap_t::value_type("Impulse", val_type::IMPULSE));
-    g_typemap.insert( bmap_t::value_type("Signal", val_type::IMPULSE));
-    g_typemap.insert( bmap_t::value_type("String", val_type::STRING));
-    g_typemap.insert( bmap_t::value_type("Symbol", val_type::STRING));
+    g_typemap.insert( bmap<val_type>::value_type("Integer", val_type::INT));
+    g_typemap.insert( bmap<val_type>::value_type("Boolean", val_type::BOOL));
+    g_typemap.insert( bmap<val_type>::value_type("True", val_type::BOOL));
+    g_typemap.insert( bmap<val_type>::value_type("False", val_type::BOOL));
+    g_typemap.insert( bmap<val_type>::value_type("Char", val_type::CHAR));
+    g_typemap.insert( bmap<val_type>::value_type("Float", val_type::FLOAT));
+    g_typemap.insert( bmap<val_type>::value_type("OSSIA_vec2f", val_type::VEC2F));
+    g_typemap.insert( bmap<val_type>::value_type("OSSIA_vec3f", val_type::VEC3F));
+    g_typemap.insert( bmap<val_type>::value_type("OSSIA_vec4f", val_type::VEC4F));
+    g_typemap.insert( bmap<val_type>::value_type("Array", val_type::LIST));
+    g_typemap.insert( bmap<val_type>::value_type("List", val_type::LIST));
+    g_typemap.insert( bmap<val_type>::value_type("Impulse", val_type::IMPULSE));
+    g_typemap.insert( bmap<val_type>::value_type("Signal", val_type::IMPULSE));
+    g_typemap.insert( bmap<val_type>::value_type("String", val_type::STRING));
+    g_typemap.insert( bmap<val_type>::value_type("Symbol", val_type::STRING));
 
-    g_accessmap.insert( bmap_a::value_type("bi", access_mode::BI));
-    g_accessmap.insert( bmap_a::value_type("both", access_mode::BI));
-    g_accessmap.insert( bmap_a::value_type("rw", access_mode::BI));
-    g_accessmap.insert( bmap_a::value_type("get", access_mode::GET));
-    g_accessmap.insert( bmap_a::value_type("read", access_mode::GET));
-    g_accessmap.insert( bmap_a::value_type("r", access_mode::GET));
-    g_accessmap.insert( bmap_a::value_type("set", access_mode::SET));
-    g_accessmap.insert( bmap_a::value_type("write", access_mode::SET));
-    g_accessmap.insert( bmap_a::value_type("w", access_mode::SET));
+    g_accessmap.insert( bmap<access_mode>::value_type("bi", access_mode::BI));
+    g_accessmap.insert( bmap<access_mode>::value_type("both", access_mode::BI));
+    g_accessmap.insert( bmap<access_mode>::value_type("rw", access_mode::BI));
+    g_accessmap.insert( bmap<access_mode>::value_type("get", access_mode::GET));
+    g_accessmap.insert( bmap<access_mode>::value_type("read", access_mode::GET));
+    g_accessmap.insert( bmap<access_mode>::value_type("r", access_mode::GET));
+    g_accessmap.insert( bmap<access_mode>::value_type("set", access_mode::SET));
+    g_accessmap.insert( bmap<access_mode>::value_type("write", access_mode::SET));
+    g_accessmap.insert( bmap<access_mode>::value_type("w", access_mode::SET));
 
-    g_bmodemap.insert( bmap_b::value_type("clip", bounding_mode::CLIP));
-    g_bmodemap.insert( bmap_b::value_type("fold", bounding_mode::FOLD));
-    g_bmodemap.insert( bmap_b::value_type("free", bounding_mode::FREE));
-    g_bmodemap.insert( bmap_b::value_type("high", bounding_mode::HIGH));
-    g_bmodemap.insert( bmap_b::value_type("low", bounding_mode::LOW));
-    g_bmodemap.insert( bmap_b::value_type("wrap", bounding_mode::WRAP));
+    g_bmodemap.insert( bmap<bounding_mode>::value_type("clip", bounding_mode::CLIP));
+    g_bmodemap.insert( bmap<bounding_mode>::value_type("fold", bounding_mode::FOLD));
+    g_bmodemap.insert( bmap<bounding_mode>::value_type("free", bounding_mode::FREE));
+    g_bmodemap.insert( bmap<bounding_mode>::value_type("high", bounding_mode::HIGH));
+    g_bmodemap.insert( bmap<bounding_mode>::value_type("low", bounding_mode::LOW));
+    g_bmodemap.insert( bmap<bounding_mode>::value_type("wrap", bounding_mode::WRAP));
 }
