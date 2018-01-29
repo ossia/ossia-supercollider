@@ -106,8 +106,13 @@ inline void ossia::sc::register_sc_node(pyrslot *s, net::node_base *node) noexce
     SetPtr  (ptr_var, node);
 }
 
-inline ossia::net::node_base* ossia::sc::get_node(pyrslot *s) noexcept
+inline ossia::net::node_base* ossia::sc::get_node(pyrslot *s)
 {
+    try { check_argument_type(s, { "OSSIA_Parameter", "OSSIA_Node",
+                                   "OSSIA_MirrorParameter", "OSSIA_MirrorNode",
+                                   "OSSIA_Device" }); }
+
+    catch( const std::exception &e ) { throw; }
     return (net::node_base*) slotRawPtr(&slotRawObject(s)->slots[0]);
 }
 

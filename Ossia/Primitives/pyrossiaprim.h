@@ -60,7 +60,7 @@ template<class T> int   check_argument_reference
 void                    register_sc_node(pyrslot *s, net::node_base *node) noexcept;
 /**                     saves the node on the stack
  */
-net::node_base*         get_node(pyrslot *s) noexcept;
+net::node_base*         get_node(pyrslot *s);
 /**                     returns slot's matching ossia::node
  */
 template<class T>
