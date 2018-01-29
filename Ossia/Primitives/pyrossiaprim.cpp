@@ -406,7 +406,7 @@ int pyr_expose_oscquery_server(vmglobals *g, int n)
     }
 
     auto oscq_protocol = std::make_unique<oscquery_server_protocol>
-                         (sc::read_int(pr_osc_port), sc::read_int(pr_ws_port));
+                         (sc::read_int(pr_osc_port), sc::read_int(pr_ws_port));    
 
     auto target_device  = dynamic_cast<net::generic_device*>(sc::get_node(rcvr));
     auto proto_mpx      = dynamic_cast<net::multiplex_protocol*>(&target_device->get_protocol());
@@ -715,21 +715,17 @@ void make_node_sheet(net::node_base& node, std::vector<ossia::value>& destinatio
     std::vector<ossia::value>  sheet;
     auto parameter = node.get_parameter();
 
-    if  ((parameters_only && parameter) || !parameters_only)
-    {
-        std::string                     separator("_");
-        std::stringstream               stream;
-        std::string                     unique_name;
+    if (parameters_only && !parameter) return;
 
-        stream << &node;
+    auto fullpath = ossia::net::osc_parameter_string(node);
 
-        auto name       = node.get_name();
-        unique_name     = name + separator + stream.str();
-        sheet           .push_back(unique_name);
-    }
+    std::stringstream ptr_stream;
+    ptr_stream << &node;
 
-    if  (parameter)
-        sheet.push_back(parameter->value());
+    sheet.push_back(fullpath);
+    sheet.push_back(ptr_stream.str());
+
+    if  ( parameter ) sheet.push_back(parameter->value());
 
     if( with_attributes )
     {

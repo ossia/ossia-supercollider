@@ -5,26 +5,20 @@
 
 OSSIA {
 
-	*domain { |min, max, values| ^OSSIA_domain(min, max, values)}
+	classvar server;
 
+	*server  { if(server.isNil) { ^Server.default } { ^server } }
+	*server_ { |target| server = target }
+	*domain { |min, max, values| ^OSSIA_domain(min, max, values)}
 	*access_mode { ^OSSIA_access_mode }
 	*bounding_mode { ^OSSIA_bounding_mode }
 
-	*vec2f { |v1 = 0.0, v2 = 0.0|
-		^OSSIA_vec2f(v1, v2);
-	}
+	*vec2f { |v1 = 0.0, v2 = 0.0| ^OSSIA_vec2f(v1, v2) }
+	*vec3f { |v1 = 0.0, v2 = 0.0, v3 = 0.0| ^OSSIA_vec3f(v1, v2, v3) }
+	*vec4f { |v1 = 0.0, v2 = 0.0, v3 = 0.0, v4 = 0.0| ^OSSIA_vec4f(v1, v2, v3, v4) }
 
-	*vec3f { |v1 = 0.0, v2 = 0.0, v3 = 0.0|
-		^OSSIA_vec3f(v1, v2, v3);
-	}
-
-	*vec4f { |v1 = 0.0, v2 = 0.0, v3 = 0.0, v4 = 0.0|
-		^OSSIA_vec4f(v1, v2, v3, v4);
-	}
-
-	*device  { |name|
-		^OSSIA_Device(name)
-	}
+	*device  { |name| ^OSSIA_Device(name) }
+	*node { |parent_node, name| ^OSSIA_Node(parent_node, name) }
 
 	*parameter { |parent_node, name, type, domain, default_value, bounding_mode = 'free',
 		critical = false, repetition_filter = false |
@@ -36,10 +30,6 @@ OSSIA {
 		bounding_mode = 'free', critical = false, repetition_filter = false|
 		^OSSIA_Parameter.array(size, parent_node, name, type, domain, default_value,
 			bounding_mode, critical, repetition_filter);
-	}
-
-	*node { |parent_node, name|
-		^OSSIA_Node(parent_node, name)
 	}
 }
 
@@ -63,12 +53,12 @@ OSSIA_domain[slot]
 	at {|i| ^m_domain[i] }
 	put { |index, item| m_domain[index] = item }
 
-	min { ^this[0] }
-	min_ { |v| this[0] = v }
-	max { ^this[1] }
-	max_ { |v| this[1] = v }
-	values { ^this[2] }
-	values_ { |anArray|
+	min      { ^this[0] }
+	min_     { |v| this[0] = v }
+	max      { ^this[1] }
+	max_     { |v| this[1] = v }
+	values   { ^this[2] }
+	values_  { |anArray|
 		if((not(anArray.class == Array)) && (anArray.notNil)) {
 			Error("values argument should be an array").throw;
 		};
@@ -173,20 +163,37 @@ OSSIA_Node {
 	}
 
 	snapshot { |... exclude|
-		var flat = this.explore(false, true).flatten;
-		var arr = flat.do({|item,i|
-			if((i%2==0) && (item.isKindOf(String))) { flat[i] = item.asSymbol }
+		var exp = this.explore(false, true);
+		var res = [];
+
+		exp.do({|item|
+			var unique = item[0].split($/).last ++ "_" ++ item[1];
+			res = res.add(unique.asSymbol);
+			res = res.add(item[2]);
 		});
 
 		if(exclude.notEmpty)
 		{
 			exclude.do({|item|
-				var index = arr.indexOf(item.sym);
-				2.do({ arr.removeAt(index) });
+				var index = res.indexOf(item.sym);
+				2.do({ res.removeAt(index) });
 			});
 		};
 
-		^arr
+		^res
+	}
+
+	tree { |with_attributes = false, parameters_only = false|
+		var exp = this.explore(with_attributes, parameters_only);
+
+		exp.do({|item|
+			var str = "";
+			item.do({|subitem|
+				str = str + subitem;
+			});
+			str.postln;
+		});
+
 	}
 
 	explore { |with_attributes = true, parameters_only = false|
@@ -612,13 +619,13 @@ OSSIA_Parameter : OSSIA_Node {
 	// CONVENIENCE DEF MTHODS
 
 	sym { ^(this.name ++ "_" ++ m_ptr_data.asSymbol).asSymbol }
-	aar { ^[this.sym, this.value()]; }
+	aar { ^[this.sym, this.value()] }
 
 	kr { | bind = true |
 
 		if(bind) {
 			if(not(m_has_callback)) { this.prEnableCallback; m_has_callback = true };
-			m_callback = { |v| Server.default.sendMsg("/n_set", 0, this.sym, v) };
+			m_callback = { |v| OSSIA.server.sendMsg("/n_set", 0, this.sym, v) };
 		}
 
 		^this.sym.kr
@@ -628,7 +635,7 @@ OSSIA_Parameter : OSSIA_Node {
 
 		if(bind) {
 			if(not(m_has_callback)) { this.prEnableCallback; m_has_callback = true };
-			m_callback = { |v| Server.default.sendMsg("/n_set", 0, this.sym, v) };
+			m_callback = { |v| OSSIA.server.sendMsg("/n_set", 0, this.sym, v) };
 		}
 
 		^this.sym.ar
