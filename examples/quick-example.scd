@@ -1,9 +1,8 @@
 (
-d = OSSIA_Device("ossia-collider");
-d.exposeOSCQueryServer(1234, 5678, {
-  ~freq = OSSIA_Parameter(d, 'frequency', Float, [0, 20000], 440);
-  ~mul = OSSIA_Parameter(d, 'mul', Float, [0, 1], 0.125);
-  ~pan = OSSIA_Parameter(d, 'pan', Float, [-1, 1], 0);
+d = OSSIA.device("ossia-collider").exposeOSCQueryServer(1234, 5678, {
+  ~freq = OSSIA.parameter(d, 'frequency', Float, [0, 20000], 440);
+  ~mul = OSSIA.parameter(d, 'mul', Float, [0, 1], 0.125);
+  ~pan = OSSIA.parameter(d, 'pan', Float, [-1, 1], 0);
 });
 )
 
