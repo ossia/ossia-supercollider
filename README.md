@@ -9,7 +9,7 @@
 - run ./build.sh
 - resulting .app will be located in `install/supercollider/SuperCollider` 
 
-the script clones a fresh version of supercollider (as of this day, version 3.9dev - you may change to sc3.8 branch on macOS, but it doesn't work on Linux), adds and builds the libossia dependencies for sclang. Depending on your connection, the install process may take a little while, because of the complete download and build of the two libs/applications.
+the script clones a fresh version of supercollider (as of this day, version 3.9), adds and builds the libossia dependencies for sclang. Depending on your connection, the install process may take a little while, because of the complete download and build of the two libs/applications.
 
 ### Linux (tested on debian-like systems)
 
