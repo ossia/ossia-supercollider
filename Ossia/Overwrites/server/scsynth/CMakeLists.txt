@@ -190,7 +190,7 @@ endif()
 
 if (Boost_FOUND)
     target_link_libraries(libscsynth Boost::system Boost::filesystem)
-	target_link_libraries(libscsynth ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} )
+    #target_link_libraries(libscsynth ${Boost_SYSTEM_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} )
 else()
 	target_link_libraries(libscsynth boost_system boost_filesystem)
 endif()
