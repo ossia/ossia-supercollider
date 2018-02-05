@@ -9,7 +9,7 @@
 - run ./build.sh
 - resulting .app will be located in `install/supercollider/SuperCollider` 
 
-the script clones a fresh version of supercollider (as of this day, version 3.9dev - you may change to sc3.8 branch on macOS, but it doesn't work on Linux), adds and builds the libossia dependencies for sclang. Depending on your connection, the install process may take a little while, because of the complete download and build of the two libs/applications.
+the script clones a fresh version of supercollider (as of this day, version 3.9), adds and builds the libossia dependencies for sclang. Depending on your connection, the install process may take a little while, because of the complete download and build of the two libs/applications.
 
 ### Linux (tested on debian-like systems)
 
@@ -36,11 +36,10 @@ it is also available here: https://ossia.github.io/?javascript#introduction
 
 ```js
 (
-d = OSSIA_Device("ossia-collider");
-d.exposeOSCQueryServer(1234, 5678, {
-  ~freq = OSSIA_Parameter(d, 'frequency', Float, [0, 20000], 440);
-  ~mul = OSSIA_Parameter(d, 'mul', Float, [0, 1], 0.125);
-  ~pan = OSSIA_Parameter(d, 'pan', Float, [-1, 1], 0);
+d = OSSIA.device("ossia-collider").exposeOSCQueryServer(1234, 5678, {
+  ~freq = OSSIA.parameter(d, 'frequency', Float, [0, 20000], 440);
+  ~mul = OSSIA.parameter(d, 'mul', Float, [0, 1], 0.125);
+  ~pan = OSSIA.parameter(d, 'pan', Float, [-1, 1], 0);
 });
 )
 
