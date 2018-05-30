@@ -91,7 +91,7 @@
     # checking/installing ossia & supercollider dependencies
     
     if [ $OFFLINE = 0 ]; then
-        sudo apt -y install jackd1 libjack-dev libsndfile1-dev libxt-dev libfftw3-dev libudev-dev \
+        sudo apt -y install libjack-jackd2-dev libsndfile1-dev libxt-dev libfftw3-dev libudev-dev \
         qt5-default qt5-qmake qttools5-dev qttools5-dev-tools qtdeclarative5-dev libqt5webkit5-dev \
         qtpositioning5-dev libqt5sensors5-dev libqt5opengl5-dev \
         libavahi-compat-libdnssd-dev git wget gcc
