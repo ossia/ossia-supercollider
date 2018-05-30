@@ -683,6 +683,15 @@ int pyr_instantiate_parameter(vmglobals *g, int n)
     return errNone;
 }
 
+
+int pyr_node_free(vmglobals* g, int n)
+{
+    auto node = sc::get_node(g->sp);
+    node->get_parent()->remove_child(*node);
+    SetNil(g->sp);
+    return errNone;
+}
+
 int pyr_node_get_mirror(vmglobals *g, int n)
 {
     auto node = ossia::net::find_node(*sc::get_node(g->sp-1), sc::read_string(g->sp));
@@ -1105,6 +1114,7 @@ void initOssiaPrimitives() {
     definePrimitive(base, index++, "_OSSIA_NodeGetTags", pyr_node_get_tags, 1, 0);
     definePrimitive(base, index++, "_OSSIA_NodeGetZombie", pyr_node_get_zombie, 1, 0);
     definePrimitive(base, index++, "_OSSIA_NodeGetMirror", pyr_node_get_mirror, 3, 0);
+    definePrimitive(base, index++, "_OSSIA_NodeFree", pyr_node_free, 1, 0);
 
     definePrimitive(base, index++, "_OSSIA_NodeSetDisabled", pyr_node_set_disabled, 2, 0);
     definePrimitive(base, index++, "_OSSIA_NodeSetHidden", pyr_node_set_hidden, 2, 0);

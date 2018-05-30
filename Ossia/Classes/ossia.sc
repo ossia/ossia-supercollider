@@ -214,6 +214,11 @@ OSSIA_Node {
 		^this.primitiveFailed
 	}
 
+	free {
+		_OSSIA_NodeFree
+		^this.primitiveFailed
+	}
+
 	hidden {
 		_OSSIA_NodeGetHidden
 		^this.primitiveFailed
@@ -662,7 +667,7 @@ OSSIA_MirrorParameter : OSSIA_Parameter {
 
 OSSIA_MirrorNode : OSSIA_Node {
 	*new { |device, address|
-		^this.new.pyrGetMirror(device, address)
+		^super.newFromChild.pyrGetMirror(device, address)
 	}
 
 	pyrGetMirror { |device, addr|
