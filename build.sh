@@ -155,7 +155,6 @@
   # LIBOSSIA BUILD ------------------------------------------------------------------------------
 
   # temporary fix for ossia cxx_standard
-  yes | cp -rf Ossia/Overwrites/ossia/OssiaConfiguration.cmake submodules/libossia/CMake
 
   mkdir -p build
   mkdir -p build/libossia
@@ -200,7 +199,8 @@
   )
 
   (
-    
+  
+  yes | cp -rf Ossia/Overwrites/doc/lex.scdoc.cpp submodules/supercollider/SCDoc  
   yes | cp -rf Ossia/Overwrites/root/CMakeLists.txt submodules/supercollider
   yes | cp -rf Ossia/Overwrites/lang/CMakeLists.txt submodules/supercollider/lang
   yes | cp -rf Ossia/Overwrites/lang/PyrPrimitive.cpp submodules/supercollider/lang/LangPrimSource
