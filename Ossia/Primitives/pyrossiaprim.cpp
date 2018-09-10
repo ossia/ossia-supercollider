@@ -334,7 +334,7 @@ inline void ossia::sc::write_string(vmglobals *g, pyrslot *target, const std::st
 void ossia::sc::write_value(vmglobals *g, pyrslot *target, const ossia::value& value) noexcept
 {
     ossia::val_type vtype;
-    if(value.valid()) vtype = value.getType();
+    if(value.valid()) vtype = value.get_type();
     else vtype = ossia::val_type::NONE;
 
     switch ( vtype )
