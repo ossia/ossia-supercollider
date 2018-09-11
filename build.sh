@@ -91,7 +91,7 @@
     # checking/installing ossia & supercollider dependencies
     
     if [ $OFFLINE = 0 ]; then
-        sudo apt -y install libjack-jackd2-dev libsndfile1-dev libxt-dev libfftw3-dev libudev-dev \
+        sudo apt -y install cmake libjack-jackd2-dev libsndfile1-dev libxt-dev libfftw3-dev libudev-dev \
         qt5-default qt5-qmake qttools5-dev qttools5-dev-tools qtdeclarative5-dev libqt5webkit5-dev \
         qtpositioning5-dev libqt5sensors5-dev libqt5opengl5-dev \
         libavahi-compat-libdnssd-dev git wget gcc
@@ -104,13 +104,6 @@
         (
 
         cd dependencies
-        
-        # cmake
-        if [[ ! -d "cmake-3.10.0-Linux-x86_64" ]]; then
-    	    wget https://cmake.org/files/v3.10/cmake-3.10.0-Linux-x86_64.tar.gz
-    	    tar xaf cmake-3.10.0-Linux-x86_64.tar.gz
-  	        rm -rf cmake-3.10.0-Linux-x86_64.tar.gz
-        fi
 
         # download and install boost
         if [ $CUSTOM_BOOST = 0 ]; then
@@ -136,7 +129,8 @@
         )
         
         if [ $CUSTOM_BOOST = 0 ]; then
-            BOOST_ROOT="$(pwd)/dependencies/boost" 
+           BOOST_ROOT="$(pwd)/dependencies/boost_1_65_1"
+	    #"$(pwd)/dependencies/boost" 
             BOOST_LIBS="$(pwd)/dependencies/boost/lib"
             BOOST_INCLUDE="$(pwd)/dependencies/boost/include"
         fi
@@ -151,6 +145,16 @@
     BOOST_INCLUDE="/usr/include"
     
   fi
+  # LIBOSSIA OVERWRITE ------------------------------------------------------------------------
+
+  (
+
+  cd submodules/libossia
+
+  yes | cp -rf ../../Ossia/Overwrites/libossia/OssiaDeps.cmake CMake/
+  rm -rf OSSIA/InstallBoost.cmake # not needed, especialy as this downloads adifferent boost version than 1.65.1 used here
+
+  )
 
   # LIBOSSIA BUILD ------------------------------------------------------------------------------
 
@@ -169,11 +173,12 @@
 
         cmake ../../submodules/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_ROOT=$BOOST_ROOT -DOSSIA_EDITOR=ON
 
-   elif [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "elementary" ]; then
-    ../../dependencies/cmake-3.10.0-Linux-x86_64/bin/cmake  ../../submodules/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_INCLUDEDIR=$BOOST_INCLUDE -DBOOST_LIBRARYDIR=$BOOST_LIBS -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DBOOST_ROOT=$BOOST_ROOT -DBoost_NO_SYSTEM_PATHS=ON
-    
-   fi
-   
+    elif [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "elementary" ]; then
+     	
+	cmake ../../submodules/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_ROOT=$BOOST_ROOT -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DBoost_NO_SYSTEM_PATHS=ON
+  
+    fi
+
    make -j8
    echo "libossia built succesfully... installing"
    make install
@@ -241,10 +246,13 @@
   cd build/supercollider
 
   if [ "$DISTRO" = "darwin" ]; then 
-      cmake ../../submodules/supercollider -DCMAKE_PREFIX_PATH=$QT_PATH -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/supercollider -DSYSTEM_BOOST=ON -DBOOST_ROOT=$BOOST_ROOT
+      
+	cmake ../../submodules/supercollider -DCMAKE_PREFIX_PATH=$QT_PATH -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/supercollider -DSYSTEM_BOOST=ON -DBOOST_ROOT=$BOOST_ROOT
 
   elif [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "elementary" ]; then
-    ../../dependencies/cmake-3.10.0-Linux-x86_64/bin/cmake ../../submodules/supercollider -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DCMAKE_BUILD_TYPE=Release -DSYSTEM_BOOST=ON -DBOOST_INCLUDEDIR=$BOOST_INCLUDE -DBOOST_LIBRARYDIR=$BOOST_LIBS -DBOOST_ROOT=$BOOST_ROOT -DBoost_DEBUG=OFF
+    
+	cmake ../../submodules/supercollider -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DCMAKE_BUILD_TYPE=Release -DSYSTEM_BOOST=ON -DBOOST_INCLUDEDIR=$BOOST_INCLUDE -DBOOST_LIBRARYDIR=$BOOST_LIBS -DBOOST_ROOT=$BOOST_ROOT -DBoost_DEBUG=OFF
+  
   fi
 
   make -j8

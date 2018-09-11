@@ -4,3 +4,9 @@
 [submodule "submodules/supercollider"]
 	path = submodules/supercollider
 	url = https://github.com/supercollider/supercollider
+[submodule "libossia"]
+	path = libossia
+	url = /home/scrime/Documents/dev/ossia-supercollider/submodules/libossia/
+[submodule "supercollider"]
+	path = supercollider
+	url = /home/scrime/Documents/dev/ossia-supercollider/submodules/supercollider/
