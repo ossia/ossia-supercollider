@@ -63,14 +63,24 @@
         brew install qt@5.5
     fi
 
-      # BOOST >= 1.65
-    if brew ls --versions boost > /dev/null; then
-        echo "boost already installed"
-    else
-        echo "installing boost with homebrew"
-        brew install boost
-    fi
+    # use boost dowloaded source instead of brew package 
 
+      # BOOST >= 1.65
+      #if brew ls --versions boost > /dev/null; then
+      #  echo "boost already installed"
+      #else
+      #  echo "installing boost with homebrew"
+      #  brew install boost
+      #fi
+    
+      # wget >= 1.19.5
+      if brew ls --versions wget > /dev/null; then
+         echo "wget already installed"
+      else
+         echo "installing wget with homebrew"
+         brew install wget
+      fi  
+ 
       # CMAKE
       if brew ls --versions cmake > /dev/null; then
         echo "cmake already installed"
@@ -78,12 +88,12 @@
         echo "installing cmake with homebrew"
         brew install cmake
     fi
-
-    fi
+    
+    # use boost dowloaded source instead of brew package 
 
     # ADDING DEFAULT PATHS
-    BOOST_ROOT="/usr/local/opt/boost"
-    BOOST_INCLUDE="/usr/local/opt/boost/include"
+    #BOOST_ROOT="/usr/local/opt/boost"
+    #BOOST_INCLUDE="/usr/local/opt/boost/include"
     QT_PATH="/usr/local/opt/qt@5.5"
 
   elif [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "elementary" ] ; then
@@ -96,21 +106,26 @@
         qtpositioning5-dev libqt5sensors5-dev libqt5opengl5-dev \
         libavahi-compat-libdnssd-dev git wget gcc
 
-        # installing non-packaged dependencies
-        if [ ! -d "dependencies" ]; then
-            mkdir dependencies
-        fi
+	fi
 
-        (
+	    QT_PATH="/usr/lib/x86_64-linux-gnu"
+  
+  	# installing non-packaged dependencies
+    if [ ! -d "dependencies" ]; then
+        mkdir dependencies
+    fi
+        
 
-        cd dependencies
+     (
+
+       cd dependencies
 
         # download and install boost
         if [ $CUSTOM_BOOST = 0 ]; then
 
             if [ ! -d "boost_1_65_1" ]; then	
   	            wget http://downloads.sourceforge.net/project/boost/boost/1.65.1/boost_1_65_1.tar.bz2
-    	        tar xaf boost_1_65_1.tar.bz2
+    	        tar xf boost_1_65_1.tar.bz2
             fi
 
             if [[ ! -d "boost" ]]; then
@@ -123,21 +138,18 @@
   	            rm -rf ../boost_1_65_1.tar.bz2
   	            )
             fi
-
-        fi
-
-        )
         
-        if [ $CUSTOM_BOOST = 0 ]; then
-           BOOST_ROOT="$(pwd)/dependencies/boost_1_65_1"
-	    #"$(pwd)/dependencies/boost" 
-            BOOST_LIBS="$(pwd)/dependencies/boost/lib"
-            BOOST_INCLUDE="$(pwd)/dependencies/boost/include"
         fi
-    fi
+        
+       )
+       
+    fi   
+       
+     BOOST_ROOT="$(pwd)/dependencies/boost_1_65_1"
+     BOOST_LIBS="$(pwd)/dependencies/boost/lib"	
+     BOOST_INCLUDE="$(pwd)/dependencies/boost/include"	
     
-    QT_PATH="/usr/lib/x86_64-linux-gnu"
-
+    
   elif [ "$DISTRO" = "archlinux" ]; then
     sudo pacman -S git cmake 
 
@@ -145,14 +157,18 @@
     BOOST_INCLUDE="/usr/include"
     
   fi
+  
   # LIBOSSIA OVERWRITE ------------------------------------------------------------------------
 
   (
 
   cd submodules/libossia
 
+  # revert to boost 1.65.1
   yes | cp -rf ../../Ossia/Overwrites/libossia/OssiaDeps.cmake CMake/
-  rm -rf OSSIA/InstallBoost.cmake # not needed, especialy as this downloads adifferent boost version than 1.65.1 used here
+
+  # boost install script not needed, especialy as this downloads a different boost version than 1.65.1 used here
+  rm -rf OSSIA/InstallBoost.cmake 
 
   )
 
@@ -163,6 +179,7 @@
   mkdir -p build
   mkdir -p build/libossia
   mkdir -p install
+  
   (
     cd build/libossia
 
@@ -171,11 +188,11 @@
     
     if [ "$DISTRO" = "darwin" ]; then
 
-        cmake ../../submodules/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_ROOT=$BOOST_ROOT -DOSSIA_EDITOR=ON
+        cmake ../../submodules/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_ROOT=../../dependencies/boost	-DBoost_NO_SYSTEM_PATHS=ON
 
     elif [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "elementary" ]; then
      	
-	cmake ../../submodules/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_ROOT=$BOOST_ROOT -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DBoost_NO_SYSTEM_PATHS=ON
+	    cmake ../../submodules/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_ROOT=$BOOST_ROOT -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DBoost_NO_SYSTEM_PATHS=ON
   
     fi
 
@@ -201,6 +218,7 @@
   if [[ ! -d "Ossia" ]]; then
       mkdir Ossia
   fi
+  
   )
 
   (
@@ -228,6 +246,7 @@
   if [[ ! -d "ossia-sc" ]]; then
       mkdir ossia-sc
   fi
+  
   )
 
   # move the ossia prim header into ossia include directory... 
@@ -236,10 +255,12 @@
 
   # SUPERCOLLIDER BUILD ----------------------------------------------------------------------
   (
+  
   cd submodules/supercollider
 
   # remove packaged boost, which gets somehow included even with SYSTEM_BOOST=ON
   rm -rf external_libraries/boost
+  
   )
 
   mkdir -p build/supercollider
@@ -247,7 +268,8 @@
 
   if [ "$DISTRO" = "darwin" ]; then 
       
-	cmake ../../submodules/supercollider -DCMAKE_PREFIX_PATH=$QT_PATH -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/supercollider -DSYSTEM_BOOST=ON -DBOOST_ROOT=$BOOST_ROOT
+	cmake ../../submodules/supercollider -DCMAKE_PREFIX_PATH=$QT_PATH -DCMAKE_INSTALL_PREFIX=../../install/supercollider -DSYSTEM_BOOST=ON -DBOOST_ROOT=$BOOST_ROOT -DBOOST_INCLUDEDIR=$BOOST_INCLUDE -DBOOST_LIBRARYDIR=$BOOST_LIBS -DBoost_DEBUG=OFF 
+	
 
   elif [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "elementary" ]; then
     
