@@ -40,82 +40,13 @@
 
   # DEPENDENCIES ------------------------------------------------------------------------
 
-  if [ "$DISTRO" = "darwin" ]; then
+  nonPackBoost() {
 
-    # check homebrew installation
-    export HOMEBREW_BIN=$(command -v brew)
-    if [[ "$HOMEBREW_BIN" == "" ]]; then
-      echo "Homebrew is not installed."
-      echo "Please install it by running the following command:"
-      echo '    /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"'
-      exit 1
-    fi
-
-    # CHECK HOMEBREW DEPENDENCIE
-    
-    if [ $OFFLINE = 0 ]; then
-
-      # QT 5.5 (required for supercollider's webkit
-      if brew ls --versions qt@5.5 > /dev/null; then
-        echo "qt@5.5 with brew correctly installed"
-      else
-        echo "installing qt@5.5 with homebrew"
-        brew install qt@5.5
-    fi
-
-    # use boost dowloaded source instead of brew package 
-
-      # BOOST >= 1.65
-      #if brew ls --versions boost > /dev/null; then
-      #  echo "boost already installed"
-      #else
-      #  echo "installing boost with homebrew"
-      #  brew install boost
-      #fi
-    
-      # wget >= 1.19.5
-      if brew ls --versions wget > /dev/null; then
-         echo "wget already installed"
-      else
-         echo "installing wget with homebrew"
-         brew install wget
-      fi  
- 
-      # CMAKE
-      if brew ls --versions cmake > /dev/null; then
-        echo "cmake already installed"
-    else
-        echo "installing cmake with homebrew"
-        brew install cmake
-    fi
-    
-    # use boost dowloaded source instead of brew package 
-
-    # ADDING DEFAULT PATHS
-    #BOOST_ROOT="/usr/local/opt/boost"
-    #BOOST_INCLUDE="/usr/local/opt/boost/include"
-    QT_PATH="/usr/local/opt/qt@5.5"
-
-  elif [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "elementary" ] ; then
-
-    # checking/installing ossia & supercollider dependencies
-    
-    if [ $OFFLINE = 0 ]; then
-        sudo apt -y install cmake libjack-jackd2-dev libsndfile1-dev libxt-dev libfftw3-dev libudev-dev \
-        qt5-default qt5-qmake qttools5-dev qttools5-dev-tools qtdeclarative5-dev libqt5webkit5-dev \
-        qtpositioning5-dev libqt5sensors5-dev libqt5opengl5-dev \
-        libavahi-compat-libdnssd-dev git wget gcc
-
-	fi
-
-	    QT_PATH="/usr/lib/x86_64-linux-gnu"
-  
-  	# installing non-packaged dependencies
+	# installing non-packaged dependencies
     if [ ! -d "dependencies" ]; then
         mkdir dependencies
     fi
         
-
      (
 
        cd dependencies
@@ -141,14 +72,90 @@
         
         fi
         
-       )
-       
-    fi   
+       ) 
        
      BOOST_ROOT="$(pwd)/dependencies/boost_1_65_1"
+     echo "boost found"
      BOOST_LIBS="$(pwd)/dependencies/boost/lib"	
-     BOOST_INCLUDE="$(pwd)/dependencies/boost/include"	
+     BOOST_INCLUDE="$(pwd)/dependencies/boost/include"
+
+}
+
+  if [ "$DISTRO" = "darwin" ]; then
+
+    # check homebrew installation
+    export HOMEBREW_BIN=$(command -v brew)
+    if [[ "$HOMEBREW_BIN" == "" ]]; then
+      echo "Homebrew is not installed."
+      echo "Please install it by running the following command:"
+      echo '    /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"'
+      exit 1
+    fi
+
+    # CHECK HOMEBREW DEPENDENCIE
     
+    if [ $OFFLINE = 0 ]; then
+
+      # QT 5.5 (required for supercollider's webkit
+      if brew ls --versions qt@5.5 > /dev/null; then
+        echo "qt@5.5 with brew correctly installed"
+      else
+        echo "installing qt@5.5 with homebrew"
+        brew install qt@5.5
+      fi
+
+    # use boost dowloaded source instead of brew package 
+
+      # BOOST >= 1.65
+      #if brew ls --versions boost > /dev/null; then
+      #  echo "boost already installed"
+      #else
+      #  echo "installing boost with homebrew"
+      #  brew install boost
+      #fi
+    
+      # wget >= 1.19.5
+      if brew ls --versions wget > /dev/null; then
+         echo "wget already installed"
+      else
+         echo "installing wget with homebrew"
+         brew install wget
+      fi  
+ 
+      # CMAKE
+      if brew ls --versions cmake > /dev/null; then
+        echo "cmake already installed"
+      else
+        echo "installing cmake with homebrew"
+        brew install cmake
+      fi
+
+      # ADDING DEFAULT PATHS
+      #BOOST_ROOT="/usr/local/opt/boost"
+      #BOOST_INCLUDE="/usr/local/opt/boost/include"
+      QT_PATH="/usr/local/opt/qt@5.5"
+
+    fi
+
+    # use boost dowloaded source instead of brew package 
+ 
+    nonPackBoost
+
+  elif [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "elementary" ] ; then
+
+    # checking/installing ossia & supercollider dependencies
+    
+    if [ $OFFLINE = 0 ]; then
+        sudo apt -y install cmake libjack-jackd2-dev libsndfile1-dev libxt-dev libfftw3-dev libudev-dev \
+        qt5-default qt5-qmake qttools5-dev qttools5-dev-tools qtdeclarative5-dev libqt5webkit5-dev \
+        qtpositioning5-dev libqt5sensors5-dev libqt5opengl5-dev \
+        libavahi-compat-libdnssd-dev git wget gcc
+     
+        QT_PATH="/usr/lib/x86_64-linux-gnu"	
+
+     fi
+     
+     nonPackBoost
     
   elif [ "$DISTRO" = "archlinux" ]; then
     sudo pacman -S git cmake 
@@ -188,11 +195,11 @@
     
     if [ "$DISTRO" = "darwin" ]; then
 
-        cmake ../../submodules/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_ROOT=../../dependencies/boost	-DBoost_NO_SYSTEM_PATHS=ON
+        cmake ../../submodules/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_ROOT=$BOOST_ROOT
 
     elif [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "elementary" ]; then
      	
-	    cmake ../../submodules/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_ROOT=$BOOST_ROOT -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DBoost_NO_SYSTEM_PATHS=ON
+	    cmake ../../submodules/libossia -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=../../install/libossia -DOSSIA_PYTHON=0 -DOSSIA_NO_QT=1 -DOSSIA_TESTING=0 -DOSSIA_STATIC=1 -DOSSIA_NO_SONAME=1 -DOSSIA_PD=0 -DBOOST_ROOT=$BOOST_ROOT -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ 
   
     fi
 
@@ -272,6 +279,7 @@
 	
 
   elif [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "elementary" ]; then
+
     
 	cmake ../../submodules/supercollider -DCMAKE_C_COMPILER=/usr/bin/gcc -DCMAKE_CXX_COMPILER=/usr/bin/g++ -DCMAKE_BUILD_TYPE=Release -DSYSTEM_BOOST=ON -DBOOST_INCLUDEDIR=$BOOST_INCLUDE -DBOOST_LIBRARYDIR=$BOOST_LIBS -DBOOST_ROOT=$BOOST_ROOT -DBoost_DEBUG=OFF
   
