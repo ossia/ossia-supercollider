@@ -237,12 +237,13 @@
   yes | cp -rf Ossia/Overwrites/testsuite/CMakeLists.txt submodules/supercollider/testsuite/supernova
   yes | cp -rf Ossia/Overwrites/server/scsynth/CMakeLists.txt submodules/supercollider/server/scsynth
   yes | cp -rf Ossia/Overwrites/server/supernova/CMakeLists.txt submodules/supercollider/server/supernova
+  yes | cp -rf Ossia/Overwrites/external_libraries/CMakeLists.txt submodules/supercollider/external_libraries
+  yes | cp -rf Ossia/Overwrites/editors/CMakeLists.txt submodules/supercollider/editors/sc-ide
 
   yes | cp -rf Ossia/Classes/ossia.sc submodules/supercollider/SCClassLibrary/Ossia
   yes | cp -rf Ossia/HelpSource/Guides/OssiaReference.schelp submodules/supercollider/HelpSource/Guides
   yes | cp -rf Ossia/HelpSource/Classes submodules/supercollider/HelpSource/Classes
   yes | cp -rf Ossia/HelpSource/Help.schelp submodules/supercollider/HelpSource
-
 
   shopt -s dotglob nullglob
   mv submodules/supercollider/HelpSource/Classes/Classes submodules/supercollider/HelpSource/Classes/Ossia
