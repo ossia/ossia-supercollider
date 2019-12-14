@@ -1,4 +1,6 @@
 # ossia-supercollider : libossia bindings for supercollider
+#### note: repository is now obsolete and will be archived soon,
+#### a better replacement can be found here: https://github.com/OSSIA/ossia-sclang
 
 ## Installing
 
